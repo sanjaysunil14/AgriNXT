@@ -1,0 +1,234 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  BUYER
+  FARMER
+}
+
+enum BookingStatus {
+  OPEN
+  ROUTED
+  COMPLETED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum RouteStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+enum PaymentMode {
+  CASH
+  UPI
+  BANK_TRANSFER
+}
+
+model User {
+  id            Int             @id @default(autoincrement())
+  full_name     String
+  phone_number  String          @unique
+  email         String?         @unique
+  location      String?
+  password_hash String
+  role          Role
+  status        ApprovalStatus  @default(PENDING)
+  is_active     Boolean         @default(true)
+  
+  // Buyer-specific fields
+  business_name String?
+  address       String?
+  
+  // Farmer-specific location fields (GPS coordinates)
+  latitude      Float?
+  longitude     Float?
+  
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @updatedAt
+
+  // Relations
+  farmer_profile    FarmerProfile?
+  buyer_routes      Route[]
+  buyer_chits       CollectionChit[] @relation("BuyerChits")
+  farmer_chits      CollectionChit[] @relation("FarmerChits")
+  invoices          Invoice[]
+  audit_logs        AuditLog[]       @relation("AdminActions")
+  audit_targets     AuditLog[]       @relation("TargetUser")
+
+  @@map("users")
+}
+
+model AuditLog {
+  id             Int      @id @default(autoincrement())
+  admin_id       Int
+  action         String
+  target_user_id Int?
+  details        String?
+  ip_address     String?
+  created_at     DateTime @default(now())
+
+  // Relations
+  admin       User  @relation("AdminActions", fields: [admin_id], references: [id], onDelete: Cascade)
+  target_user User? @relation("TargetUser", fields: [target_user_id], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
+
+model FarmerProfile {
+  id              Int             @id @default(autoincrement())
+  user_id         Int             @unique
+  village_name    String
+  latitude        Float
+  longitude       Float
+  payment_method  PaymentMode     @default(CASH)
+  approval_status ApprovalStatus  @default(PENDING)
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
+
+  // Relations
+  user     User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@map("farmer_profiles")
+}
+
+model Booking {
+  id                  Int           @id @default(autoincrement())
+  farmer_id           Int
+  date                DateTime
+  vegetables_summary  String
+  estimated_weight    Float
+  status              BookingStatus @default(OPEN)
+  created_at          DateTime      @default(now())
+  updated_at          DateTime      @updatedAt
+
+  // Relations
+  farmer      FarmerProfile @relation(fields: [farmer_id], references: [id], onDelete: Cascade)
+  route_stops RouteStop[]
+
+  @@map("bookings")
+}
+
+model Route {
+  id             Int         @id @default(autoincrement())
+  buyer_id       Int
+  date           DateTime
+  total_distance Float       @default(0)
+  status         RouteStatus @default(PLANNED)
+  created_at     DateTime    @default(now())
+  updated_at     DateTime    @updatedAt
+
+  // Relations
+  buyer       User        @relation(fields: [buyer_id], references: [id], onDelete: Cascade)
+  route_stops RouteStop[]
+
+  @@map("routes")
+}
+
+model RouteStop {
+  id             Int      @id @default(autoincrement())
+  route_id       Int
+  booking_id     Int
+  sequence_order Int
+  created_at     DateTime @default(now())
+
+  // Relations
+  route           Route            @relation(fields: [route_id], references: [id], onDelete: Cascade)
+  booking         Booking          @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+  collection_chit CollectionChit?
+
+  @@map("route_stops")
+}
+
+model CollectionChit {
+  id            Int      @id @default(autoincrement())
+  chit_code     String   @unique
+  route_stop_id Int      @unique
+  buyer_id      Int
+  farmer_id     Int
+  total_weight  Float    @default(0)
+  created_at    DateTime @default(now())
+
+  // Relations
+  route_stop        RouteStop         @relation(fields: [route_stop_id], references: [id], onDelete: Cascade)
+  buyer             User              @relation("BuyerChits", fields: [buyer_id], references: [id], onDelete: Cascade)
+  farmer            User              @relation("FarmerChits", fields: [farmer_id], references: [id], onDelete: Cascade)
+  collection_items  CollectionItem[]
+
+  @@map("collection_chits")
+}
+
+model CollectionItem {
+  id             Int    @id @default(autoincrement())
+  chit_id        Int
+  vegetable_name String
+  weight         Float
+
+  // Relations
+  chit CollectionChit @relation(fields: [chit_id], references: [id], onDelete: Cascade)
+
+  @@map("collection_items")
+}
+
+model DailyPrice {
+  id             Int      @id @default(autoincrement())
+  date           DateTime
+  vegetable_name String
+  price_per_kg   Float
+  created_at     DateTime @default(now())
+
+  @@unique([date, vegetable_name])
+  @@map("daily_prices")
+}
+
+model Invoice {
+  id             Int           @id @default(autoincrement())
+  invoice_number String        @unique
+  farmer_id      Int
+  total_amount   Float
+  status         InvoiceStatus @default(PENDING)
+  created_at     DateTime      @default(now())
+  updated_at     DateTime      @updatedAt
+
+  // Relations
+  farmer   User      @relation(fields: [farmer_id], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@map("invoices")
+}
+
+model Payment {
+  id         Int         @id @default(autoincrement())
+  invoice_id Int
+  amount     Float
+  mode       PaymentMode
+  date       DateTime
+  created_at DateTime    @default(now())
+
+  // Relations
+  invoice Invoice @relation(fields: [invoice_id], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}

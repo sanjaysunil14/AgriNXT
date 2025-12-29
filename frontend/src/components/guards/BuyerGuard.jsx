@@ -2,20 +2,20 @@ import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import Spinner from '../ui/Spinner';
 
-export default function AdminGuard({ children }) {
+export default function BuyerGuard({ children }) {
     const [loading, setLoading] = useState(true);
-    const [isAdmin, setIsAdmin] = useState(false);
+    const [isBuyer, setIsBuyer] = useState(false);
 
     useEffect(() => {
-        checkAdminAccess();
+        checkBuyerRole();
     }, []);
 
-    const checkAdminAccess = () => {
+    const checkBuyerRole = () => {
         try {
             const token = sessionStorage.getItem('accessToken');
 
             if (!token) {
-                setIsAdmin(false);
+                setIsBuyer(false);
                 setLoading(false);
                 return;
             }
@@ -23,14 +23,14 @@ export default function AdminGuard({ children }) {
             // Decode JWT token to get user role
             const payload = JSON.parse(atob(token.split('.')[1]));
 
-            if (payload.role === 'ADMIN') {
-                setIsAdmin(true);
+            if (payload.role === 'BUYER') {
+                setIsBuyer(true);
             } else {
-                setIsAdmin(false);
+                setIsBuyer(false);
             }
         } catch (error) {
-            console.error('Admin check failed:', error);
-            setIsAdmin(false);
+            console.error('Buyer check failed:', error);
+            setIsBuyer(false);
         } finally {
             setLoading(false);
         }
@@ -44,7 +44,7 @@ export default function AdminGuard({ children }) {
         );
     }
 
-    if (!isAdmin) {
+    if (!isBuyer) {
         return <Navigate to="/forbidden" replace />;
     }
 

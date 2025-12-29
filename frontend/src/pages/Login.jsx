@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { LogIn, Phone, Lock, Loader2 } from 'lucide-react';
+import { LogIn, Phone, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
 import api from '../utils/api';
 
 export default function Login() {
@@ -11,6 +11,7 @@ export default function Login() {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleChange = (e) => {
         setFormData({
@@ -23,6 +24,7 @@ export default function Login() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        console.log('🔵 Login form submitted');
 
         // Validation
         if (!formData.phone_number || !formData.password) {
@@ -36,28 +38,40 @@ export default function Login() {
         }
 
         setLoading(true);
+        console.log('🔵 Making login request...');
 
         try {
             const response = await api.post('/auth/login', formData);
+            console.log('🟢 Login response:', response.data);
 
             if (response.data.success) {
-                // Store only access token in sessionStorage
-                sessionStorage.setItem('accessToken', response.data.data.accessToken);
+                const accessToken = response.data.data.accessToken;
+                console.log('🟢 Access token received:', accessToken ? 'YES' : 'NO');
 
-                // Fetch user data from backend to determine role
-                const userResponse = await api.get('/users/me');
-                const userRole = userResponse.data.data.user.role;
+                // Store access token in sessionStorage
+                sessionStorage.setItem('accessToken', accessToken);
+                console.log('🟢 Token stored in sessionStorage');
+
+                // Decode JWT to get user role (JWT format: header.payload.signature)
+                const payload = JSON.parse(atob(accessToken.split('.')[1]));
+                const userRole = payload.role;
+                console.log('🟢 Decoded role:', userRole);
 
                 // Redirect based on role
                 if (userRole === 'ADMIN') {
+                    console.log('🟢 Redirecting to /admin');
                     navigate('/admin');
                 } else if (userRole === 'BUYER') {
-                    navigate('/buyer/dashboard');
+                    console.log('🟢 Redirecting to /buyer');
+                    navigate('/buyer');
                 } else if (userRole === 'FARMER') {
-                    navigate('/farmer/dashboard');
+                    console.log('🟢 Redirecting to /farmer');
+                    navigate('/farmer');
                 }
             }
         } catch (err) {
+            console.error('🔴 Login error:', err);
+            console.error('🔴 Error response:', err.response);
             setError(err.response?.data?.message || 'Login failed. Please try again.');
         } finally {
             setLoading(false);
@@ -126,15 +140,27 @@ export default function Login() {
                                     <Lock className="h-5 w-5 text-gray-400" />
                                 </div>
                                 <input
-                                    type="password"
+                                    type={showPassword ? 'text' : 'password'}
                                     id="password"
                                     name="password"
                                     value={formData.password}
                                     onChange={handleChange}
                                     placeholder="Enter your password"
-                                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                                     disabled={loading}
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-primary-600 transition-colors"
+                                    tabIndex={-1}
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                                    ) : (
+                                        <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                                    )}
+                                </button>
                             </div>
                         </div>
 

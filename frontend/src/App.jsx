@@ -4,12 +4,22 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Forbidden from './pages/Forbidden';
 import AdminGuard from './components/guards/AdminGuard';
+import FarmerGuard from './components/guards/FarmerGuard';
+import BuyerGuard from './components/guards/BuyerGuard';
 import AdminLayout from './layouts/AdminLayout';
+import FarmerLayout from './layouts/FarmerLayout';
+import BuyerLayout from './layouts/BuyerLayout';
 import Dashboard from './pages/admin/Dashboard';
 import UserManagement from './pages/admin/UserManagement';
 import UserApprovals from './pages/admin/UserApprovals';
 import AuditLogs from './pages/admin/AuditLogs';
 import Settings from './pages/admin/Settings';
+import FarmerDashboard from './pages/farmer/FarmerDashboard';
+import FarmerHistory from './pages/farmer/FarmerHistory';
+import FarmerProfile from './pages/farmer/FarmerProfile';
+import BuyerFieldRoute from './pages/buyer/BuyerFieldRoute';
+import BuyerPricing from './pages/buyer/BuyerPricing';
+import BuyerPayments from './pages/buyer/BuyerPayments';
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -53,9 +63,40 @@ function App() {
                     {/* Legacy admin dashboard route - redirect to new admin */}
                     <Route path="/admin/dashboard" element={<Navigate to="/admin" replace />} />
 
-                    {/* Placeholder routes for other roles */}
-                    <Route path="/buyer/dashboard" element={<div className="p-8 text-center">Buyer Dashboard - Coming Soon</div>} />
-                    <Route path="/farmer/dashboard" element={<div className="p-8 text-center">Farmer Dashboard - Coming Soon</div>} />
+                    {/* Farmer routes */}
+                    <Route
+                        path="/farmer"
+                        element={
+                            <ProtectedRoute>
+                                <FarmerGuard>
+                                    <FarmerLayout />
+                                </FarmerGuard>
+                            </ProtectedRoute>
+                        }
+                    >
+                        <Route index element={<FarmerDashboard />} />
+                        <Route path="history" element={<FarmerHistory />} />
+                        <Route path="profile" element={<FarmerProfile />} />
+                    </Route>
+
+                    {/* Buyer routes */}
+                    <Route
+                        path="/buyer"
+                        element={
+                            <ProtectedRoute>
+                                <BuyerGuard>
+                                    <BuyerLayout />
+                                </BuyerGuard>
+                            </ProtectedRoute>
+                        }
+                    >
+                        <Route index element={<BuyerFieldRoute />} />
+                        <Route path="pricing" element={<BuyerPricing />} />
+                        <Route path="payments" element={<BuyerPayments />} />
+                    </Route>
+
+                    {/* Legacy buyer dashboard route - redirect to new buyer */}
+                    <Route path="/buyer/dashboard" element={<Navigate to="/buyer" replace />} />
 
                     {/* Catch all */}
                     <Route path="*" element={<Navigate to="/" replace />} />

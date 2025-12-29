@@ -6,6 +6,8 @@ import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import approvalRoutes from './routes/approvalRoutes.js';
+import farmerRoutes from './routes/farmerRoutes.js';
+import buyerRoutes from './routes/buyerRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -27,6 +29,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/approvals', approvalRoutes);
+app.use('/api/farmer', farmerRoutes);
+app.use('/api/buyer', buyerRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -52,6 +56,6 @@ app.use((err, req, res, next) => {
 
 // Start server
 app.listen(PORT, () => {
-    console.log(`🚀 Server is running on http://localhost:${PORT}`);
-    console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });

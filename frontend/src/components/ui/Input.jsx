@@ -1,4 +1,5 @@
-import { forwardRef } from 'react';
+import { forwardRef, useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 
 const Input = forwardRef(({
     label,
@@ -7,9 +8,13 @@ const Input = forwardRef(({
     iconPosition = 'left',
     className = '',
     containerClassName = '',
+    type,
     ...props
 }, ref) => {
     const hasError = !!error;
+    const [showPassword, setShowPassword] = useState(false);
+    const isPasswordField = type === 'password';
+    const inputType = isPasswordField && showPassword ? 'text' : type;
 
     return (
         <div className={containerClassName}>
@@ -28,10 +33,11 @@ const Input = forwardRef(({
 
                 <input
                     ref={ref}
+                    type={inputType}
                     className={`
             block w-full rounded-lg border transition-colors
             ${Icon && iconPosition === 'left' ? 'pl-10' : 'pl-3'}
-            ${Icon && iconPosition === 'right' ? 'pr-10' : 'pr-3'}
+            ${isPasswordField ? 'pr-10' : Icon && iconPosition === 'right' ? 'pr-10' : 'pr-3'}
             py-2.5
             ${hasError
                             ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
@@ -43,7 +49,22 @@ const Input = forwardRef(({
                     {...props}
                 />
 
-                {Icon && iconPosition === 'right' && (
+                {isPasswordField && (
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-primary-600 transition-colors"
+                        tabIndex={-1}
+                    >
+                        {showPassword ? (
+                            <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                        ) : (
+                            <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                        )}
+                    </button>
+                )}
+
+                {Icon && iconPosition === 'right' && !isPasswordField && (
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                         <Icon className={`h-5 w-5 ${hasError ? 'text-red-400' : 'text-gray-400'}`} />
                     </div>
@@ -60,3 +81,4 @@ const Input = forwardRef(({
 Input.displayName = 'Input';
 
 export default Input;
+

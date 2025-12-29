@@ -2,20 +2,20 @@ import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import Spinner from '../ui/Spinner';
 
-export default function AdminGuard({ children }) {
+export default function FarmerGuard({ children }) {
     const [loading, setLoading] = useState(true);
-    const [isAdmin, setIsAdmin] = useState(false);
+    const [isFarmer, setIsFarmer] = useState(false);
 
     useEffect(() => {
-        checkAdminAccess();
+        checkFarmerRole();
     }, []);
 
-    const checkAdminAccess = () => {
+    const checkFarmerRole = () => {
         try {
             const token = sessionStorage.getItem('accessToken');
 
             if (!token) {
-                setIsAdmin(false);
+                setIsFarmer(false);
                 setLoading(false);
                 return;
             }
@@ -23,14 +23,14 @@ export default function AdminGuard({ children }) {
             // Decode JWT token to get user role
             const payload = JSON.parse(atob(token.split('.')[1]));
 
-            if (payload.role === 'ADMIN') {
-                setIsAdmin(true);
+            if (payload.role === 'FARMER') {
+                setIsFarmer(true);
             } else {
-                setIsAdmin(false);
+                setIsFarmer(false);
             }
         } catch (error) {
-            console.error('Admin check failed:', error);
-            setIsAdmin(false);
+            console.error('Farmer check failed:', error);
+            setIsFarmer(false);
         } finally {
             setLoading(false);
         }
@@ -44,7 +44,7 @@ export default function AdminGuard({ children }) {
         );
     }
 
-    if (!isAdmin) {
+    if (!isFarmer) {
         return <Navigate to="/forbidden" replace />;
     }
 

@@ -17,9 +17,11 @@ enum Role {
 }
 
 enum BookingStatus {
-  OPEN
-  ROUTED
-  COMPLETED
+  PENDING      // Farmer created, awaiting assignment
+  OPEN         // Available for buyer
+  ROUTED       // Assigned to buyer route (SCHEDULED)
+  COMPLETED    // Collection done
+  CANCELLED    // Cancelled by farmer
 }
 
 enum ApprovalStatus {
@@ -46,6 +48,17 @@ enum PaymentMode {
   BANK_TRANSFER
 }
 
+enum PaymentMethod {
+  UPI
+  BANK
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
 model User {
   id            Int             @id @default(autoincrement())
   full_name     String
@@ -65,6 +78,10 @@ model User {
   latitude      Float?
   longitude     Float?
   
+  // Farmer payment details
+  payment_method PaymentMethod?
+  payment_value  String?
+  
   created_at    DateTime        @default(now())
   updated_at    DateTime        @updatedAt
 
@@ -73,7 +90,10 @@ model User {
   buyer_routes      Route[]
   buyer_chits       CollectionChit[] @relation("BuyerChits")
   farmer_chits      CollectionChit[] @relation("FarmerChits")
-  invoices          Invoice[]
+  buyer_invoices    Invoice[]        @relation("BuyerInvoices")
+  farmer_invoices   Invoice[]        @relation("FarmerInvoices")
+  buyer_payments    Payment[]        @relation("BuyerPayments")
+  farmer_payments   Payment[]        @relation("FarmerPayments")
   audit_logs        AuditLog[]       @relation("AdminActions")
   audit_targets     AuditLog[]       @relation("TargetUser")
 
@@ -118,9 +138,11 @@ model Booking {
   id                  Int           @id @default(autoincrement())
   farmer_id           Int
   date                DateTime
-  vegetables_summary  String
-  estimated_weight    Float
-  status              BookingStatus @default(OPEN)
+  vegetable_type      String?
+  quantity_kg         Float?
+  vegetables_summary  String?
+  estimated_weight    Float?
+  status              BookingStatus @default(PENDING)
   created_at          DateTime      @default(now())
   updated_at          DateTime      @updatedAt
 
@@ -163,13 +185,17 @@ model RouteStop {
 }
 
 model CollectionChit {
-  id            Int      @id @default(autoincrement())
-  chit_code     String   @unique
-  route_stop_id Int      @unique
-  buyer_id      Int
-  farmer_id     Int
-  total_weight  Float    @default(0)
-  created_at    DateTime @default(now())
+  id              Int      @id @default(autoincrement())
+  chit_code       String   @unique
+  route_stop_id   Int      @unique
+  buyer_id        Int
+  farmer_id       Int
+  total_weight    Float    @default(0)
+  collection_date DateTime
+  location_lat    Float?
+  location_lng    Float?
+  is_priced       Boolean  @default(false)
+  created_at      DateTime @default(now())
 
   // Relations
   route_stop        RouteStop         @relation(fields: [route_stop_id], references: [id], onDelete: Cascade)
@@ -206,29 +232,40 @@ model DailyPrice {
 model Invoice {
   id             Int           @id @default(autoincrement())
   invoice_number String        @unique
+  buyer_id       Int
   farmer_id      Int
-  total_amount   Float
+  date           DateTime
+  line_items     Json?
+  grand_total    Float         @default(0)
   status         InvoiceStatus @default(PENDING)
+  pdf_url        String?
   created_at     DateTime      @default(now())
   updated_at     DateTime      @updatedAt
 
   // Relations
-  farmer   User      @relation(fields: [farmer_id], references: [id], onDelete: Cascade)
+  buyer    User      @relation("BuyerInvoices", fields: [buyer_id], references: [id], onDelete: Cascade)
+  farmer   User      @relation("FarmerInvoices", fields: [farmer_id], references: [id], onDelete: Cascade)
   payments Payment[]
 
   @@map("invoices")
 }
 
 model Payment {
-  id         Int         @id @default(autoincrement())
-  invoice_id Int
-  amount     Float
-  mode       PaymentMode
-  date       DateTime
-  created_at DateTime    @default(now())
+  id              Int         @id @default(autoincrement())
+  invoice_id      Int?
+  buyer_id        Int
+  farmer_id       Int
+  amount          Float
+  mode            PaymentMode
+  transaction_ref String?
+  payment_date    DateTime
+  created_at      DateTime    @default(now())
 
   // Relations
-  invoice Invoice @relation(fields: [invoice_id], references: [id], onDelete: Cascade)
+  invoice Invoice? @relation(fields: [invoice_id], references: [id], onDelete: SetNull)
+  buyer   User     @relation("BuyerPayments", fields: [buyer_id], references: [id], onDelete: Cascade)
+  farmer  User     @relation("FarmerPayments", fields: [farmer_id], references: [id], onDelete: Cascade)
 
   @@map("payments")
 }
+

@@ -7,8 +7,7 @@ import Button from '../ui/Button';
 export default function BookingModal({ isOpen, onClose, onSuccess }) {
     const [formData, setFormData] = useState({
         collection_date: '',
-        vegetable_type: '',
-        quantity_kg: ''
+        vegetable_type: ''
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -26,13 +25,8 @@ export default function BookingModal({ isOpen, onClose, onSuccess }) {
         setError('');
 
         // Validation
-        if (!formData.collection_date || !formData.vegetable_type || !formData.quantity_kg) {
+        if (!formData.collection_date || !formData.vegetable_type) {
             setError('All fields are required');
-            return;
-        }
-
-        if (parseFloat(formData.quantity_kg) <= 0) {
-            setError('Quantity must be greater than 0');
             return;
         }
 
@@ -53,8 +47,7 @@ export default function BookingModal({ isOpen, onClose, onSuccess }) {
             // Reset form
             setFormData({
                 collection_date: '',
-                vegetable_type: '',
-                quantity_kg: ''
+                vegetable_type: ''
             });
             onClose();
         } catch (err) {
@@ -98,16 +91,11 @@ export default function BookingModal({ isOpen, onClose, onSuccess }) {
                     required
                 />
 
-                <Input
-                    label="Quantity (in KG) *"
-                    type="number"
-                    step="0.1"
-                    name="quantity_kg"
-                    value={formData.quantity_kg}
-                    onChange={handleChange}
-                    placeholder="Enter quantity"
-                    required
-                />
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                        💡 <strong>Note:</strong> Actual quantity will be recorded by the buyer during collection.
+                    </p>
+                </div>
 
                 <div className="flex gap-3 pt-4">
                     <Button

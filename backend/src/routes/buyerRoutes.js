@@ -4,10 +4,13 @@ import { requireRole } from '../middleware/roleMiddleware.js';
 import {
     getRoute,
     collectProduce,
-    setDailyPrices,
+    getUnpricedCollections,
+    getDailyPrices,
     getDues,
-    recordPayment
+    recordPayment,
+    createPlannedRoute
 } from '../controllers/buyerController.js';
+import { getBuyerInvoices } from '../controllers/invoiceController.js';
 
 const router = express.Router();
 
@@ -16,11 +19,16 @@ router.use(verifyToken, requireRole('BUYER'));
 
 // Field Operations
 router.get('/route', getRoute);
+router.post('/route/plan', createPlannedRoute);
 router.post('/collect', collectProduce);
 
 // Office Operations
-router.post('/set-daily-prices', setDailyPrices);
+router.get('/unpriced-collections', getUnpricedCollections);
+router.get('/daily-prices', getDailyPrices); // Read-only price viewing
 router.get('/dues', getDues);
 router.post('/pay', recordPayment);
+
+// Invoices
+router.get('/invoices', getBuyerInvoices);
 
 export default router;

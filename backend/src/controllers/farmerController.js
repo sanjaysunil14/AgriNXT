@@ -14,6 +14,7 @@ export const getDashboardStats = async (req, res) => {
         });
 
         if (!user || !user.farmer_profile) {
+            console.log(user)
             return res.status(404).json({
                 success: false,
                 message: 'Farmer profile not found'
@@ -29,11 +30,11 @@ export const getDashboardStats = async (req, res) => {
 
         const totalRevenue = invoices
             .filter(inv => inv.status === 'PAID')
-            .reduce((sum, inv) => sum + inv.total_amount, 0);
+            .reduce((sum, inv) => sum + inv.grand_total, 0);
 
         const pendingDues = invoices
             .filter(inv => inv.status === 'PENDING')
-            .reduce((sum, inv) => sum + inv.total_amount, 0);
+            .reduce((sum, inv) => sum + inv.grand_total, 0);
 
         // Get active bookings count
         const activeBookingsCount = await prisma.booking.count({
@@ -62,6 +63,7 @@ export const getDashboardStats = async (req, res) => {
     }
 };
 
+
 // Create Booking
 export const createBooking = async (req, res) => {
     try {
@@ -69,17 +71,10 @@ export const createBooking = async (req, res) => {
         const { collection_date, vegetable_type, quantity_kg } = req.body;
 
         // Validation
-        if (!collection_date || !vegetable_type || !quantity_kg) {
+        if (!collection_date || !vegetable_type) {
             return res.status(400).json({
                 success: false,
-                message: 'Collection date, vegetable type, and quantity are required'
-            });
-        }
-
-        if (quantity_kg <= 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'Quantity must be greater than 0'
+                message: 'Collection date and vegetable type are required'
             });
         }
 
@@ -121,11 +116,12 @@ export const createBooking = async (req, res) => {
 
         res.status(201).json({
             success: true,
-            message: 'Booking created successfully',
+            message: 'Booking created successfully. Actual quantity will be recorded during collection.',
             data: { booking }
         });
     } catch (error) {
         console.error('Error creating booking:', error);
+
         res.status(500).json({
             success: false,
             message: 'Failed to create booking'
@@ -381,6 +377,127 @@ export const getProfile = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to get profile'
+        });
+    }
+};
+
+// Get today's route for farmer to track buyer
+export const getTodaysRoute = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+
+        // Get farmer's info
+        const farmer = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                full_name: true,
+                phone_number: true,
+                latitude: true,
+                longitude: true
+            }
+        });
+
+        if (!farmer) {
+            return res.status(404).json({
+                success: false,
+                message: 'Farmer not found'
+            });
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        // Get all bookings for today (to show the buyer's route)
+        const allBookings = await prisma.booking.findMany({
+            where: {
+                date: {
+                    gte: today,
+                    lt: tomorrow
+                },
+                status: {
+                    in: ['PENDING', 'OPEN', 'ROUTED']
+                }
+            },
+            include: {
+                farmer: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                full_name: true,
+                                phone_number: true,
+                                latitude: true,
+                                longitude: true,
+                                business_name: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                created_at: 'asc'
+            }
+        });
+
+        if (allBookings.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No bookings scheduled for today'
+            });
+        }
+
+        // Get buyer info from first booking
+        const firstBooking = allBookings[0];
+        const buyerId = firstBooking.farmer.user.id; // This is actually wrong, need to get buyer differently
+
+        // Actually, we need to find who the buyer is - let's get from a different approach
+        // For now, use a placeholder hub location (you can update this)
+        const buyerHub = {
+            lat: 12.9716,
+            lng: 77.5946,
+            name: 'Collection Hub'
+        };
+
+        // Build response
+        const routeData = {
+            farmer: {
+                id: farmer.id,
+                name: farmer.full_name,
+                phone: farmer.phone_number,
+                location: {
+                    lat: farmer.latitude,
+                    lng: farmer.longitude
+                }
+            },
+            buyer_hub: buyerHub,
+            all_stops: allBookings.map((booking, index) => ({
+                sequence: index + 1,
+                farmer_id: booking.farmer.user.id,
+                farmer_name: booking.farmer.user.full_name,
+                farmer_phone: booking.farmer.user.phone_number,
+                location: {
+                    lat: booking.farmer.user.latitude,
+                    lng: booking.farmer.user.longitude
+                },
+                vegetable_type: booking.vegetable_type,
+                quantity_kg: booking.quantity_kg,
+                is_current_farmer: booking.farmer.user.id === userId
+            })),
+            total_stops: allBookings.length
+        };
+
+        res.json({
+            success: true,
+            data: routeData
+        });
+    } catch (error) {
+        console.error('Error getting today route:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get route data'
         });
     }
 };

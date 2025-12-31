@@ -24,7 +24,6 @@ export default function Login() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        console.log('🔵 Login form submitted');
 
         // Validation
         if (!formData.phone_number || !formData.password) {
@@ -38,40 +37,30 @@ export default function Login() {
         }
 
         setLoading(true);
-        console.log('🔵 Making login request...');
 
         try {
             const response = await api.post('/auth/login', formData);
-            console.log('🟢 Login response:', response.data);
 
             if (response.data.success) {
                 const accessToken = response.data.data.accessToken;
-                console.log('🟢 Access token received:', accessToken ? 'YES' : 'NO');
 
                 // Store access token in sessionStorage
                 sessionStorage.setItem('accessToken', accessToken);
-                console.log('🟢 Token stored in sessionStorage');
 
                 // Decode JWT to get user role (JWT format: header.payload.signature)
                 const payload = JSON.parse(atob(accessToken.split('.')[1]));
                 const userRole = payload.role;
-                console.log('🟢 Decoded role:', userRole);
 
                 // Redirect based on role
                 if (userRole === 'ADMIN') {
-                    console.log('🟢 Redirecting to /admin');
                     navigate('/admin');
                 } else if (userRole === 'BUYER') {
-                    console.log('🟢 Redirecting to /buyer');
                     navigate('/buyer');
                 } else if (userRole === 'FARMER') {
-                    console.log('🟢 Redirecting to /farmer');
                     navigate('/farmer');
                 }
             }
         } catch (err) {
-            console.error('🔴 Login error:', err);
-            console.error('🔴 Error response:', err.response);
             setError(err.response?.data?.message || 'Login failed. Please try again.');
         } finally {
             setLoading(false);

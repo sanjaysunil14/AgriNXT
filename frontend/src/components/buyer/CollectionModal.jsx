@@ -5,7 +5,7 @@ import Input from '../ui/Input';
 import Button from '../ui/Button';
 import api from '../../utils/api';
 
-export default function CollectionModal({ isOpen, onClose, booking, onSuccess }) {
+export default function CollectionModal({ isOpen, onClose, booking, routeMetrics, onSuccess }) {
     const [items, setItems] = useState([{ vegetable: '', weight: '' }]);
     const [location, setLocation] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -86,7 +86,8 @@ export default function CollectionModal({ isOpen, onClose, booking, onSuccess })
                     vegetable: item.vegetable,
                     weight: parseFloat(item.weight)
                 })),
-                location
+                location,
+                route_metrics: routeMetrics
             });
 
             // Reset form

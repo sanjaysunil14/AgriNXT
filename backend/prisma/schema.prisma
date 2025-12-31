@@ -154,13 +154,14 @@ model Booking {
 }
 
 model Route {
-  id             Int         @id @default(autoincrement())
-  buyer_id       Int
-  date           DateTime
-  total_distance Float       @default(0)
-  status         RouteStatus @default(PLANNED)
-  created_at     DateTime    @default(now())
-  updated_at     DateTime    @updatedAt
+  id                 Int         @id @default(autoincrement())
+  buyer_id           Int
+  date               DateTime
+  total_distance     Float       @default(0)
+  estimated_duration Int?
+  status             RouteStatus @default(PLANNED)
+  created_at         DateTime    @default(now())
+  updated_at         DateTime    @updatedAt
 
   // Relations
   buyer       User        @relation(fields: [buyer_id], references: [id], onDelete: Cascade)
@@ -269,3 +270,24 @@ model Payment {
   @@map("payments")
 }
 
+model SystemConfig {
+  id                     Int      @id @default(autoincrement())
+  delivery_rate_per_km   Float    @default(15.0)
+  farmer_commission_rate Float    @default(0.01)
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  @@map("system_config")
+}
+
+model SellingPrice {
+  id                   Int      @id @default(autoincrement())
+  date                 DateTime
+  vegetable_name       String
+  selling_price_per_kg Float
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  @@unique([date, vegetable_name])
+  @@map("selling_prices")
+}

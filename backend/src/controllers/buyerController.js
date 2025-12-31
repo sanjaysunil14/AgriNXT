@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import whatsAppService from '../services/WhatsAppService.js';
 
 const prisma = new PrismaClient();
 
@@ -20,7 +21,7 @@ export const getRoute = async (req, res) => {
                     lt: tomorrow
                 },
                 status: {
-                    in: ['PENDING', 'OPEN']
+                    in: ['PENDING', 'OPEN', 'ROUTED']
                 }
             },
             include: {
@@ -140,6 +141,8 @@ export const collectProduce = async (req, res) => {
             data: {
                 buyer_id: userId,
                 date: new Date(),
+                total_distance: req.body.route_metrics?.distance || 0,
+                // estimated_duration: req.body.route_metrics?.duration || null, // TODO: Apply migration first
                 status: 'IN_PROGRESS'
             }
         });
@@ -182,6 +185,27 @@ export const collectProduce = async (req, res) => {
             data: { status: 'COMPLETED' }
         });
 
+        // Send WhatsApp notification to farmer (non-blocking)
+        whatsAppService.sendCollectionChit(
+            {
+                name: booking.farmer.user.full_name,
+                phone: booking.farmer.user.phone_number
+            },
+            {
+                chitId: chitCode,
+                collectionDate: new Date().toLocaleDateString('en-IN'),
+                buyerName: req.user.fullName || 'Buyer',
+                vegetables: items.map(item => ({
+                    name: item.vegetable,
+                    quantity: item.weight,
+                    unit: 'kg'
+                }))
+            }
+        ).catch(error => {
+            // Log error but don't fail the request
+            console.error('WhatsApp notification failed:', error.message);
+        });
+
         res.status(201).json({
             success: true,
             message: 'Collection recorded successfully',
@@ -195,6 +219,92 @@ export const collectProduce = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to record collection'
+        });
+    }
+};
+
+// Get unpriced collections for pricing
+export const getUnpricedCollections = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Get all unpriced collection chits for today
+        const unpricedChits = await prisma.collectionChit.findMany({
+            where: {
+                buyer_id: userId,
+                collection_date: {
+                    gte: today,
+                    lt: new Date(today.getTime() + 24 * 60 * 60 * 1000)
+                },
+                is_priced: false
+            },
+            include: {
+                collection_items: true
+            }
+        });
+
+        // Aggregate vegetables and their total weights
+        const vegetableSummary = {};
+
+        unpricedChits.forEach(chit => {
+            chit.collection_items.forEach(item => {
+                if (!vegetableSummary[item.vegetable_name]) {
+                    vegetableSummary[item.vegetable_name] = {
+                        vegetable: item.vegetable_name,
+                        totalWeight: 0,
+                        count: 0
+                    };
+                }
+                vegetableSummary[item.vegetable_name].totalWeight += item.weight;
+                vegetableSummary[item.vegetable_name].count += 1;
+            });
+        });
+
+        const vegetables = Object.values(vegetableSummary);
+
+        res.json({
+            success: true,
+            data: {
+                vegetables,
+                totalChits: unpricedChits.length
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching unpriced collections:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch unpriced collections'
+        });
+    }
+};
+
+// Get daily prices (read-only for Buyer)
+export const getDailyPrices = async (req, res) => {
+    try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Get today's prices
+        const prices = await prisma.dailyPrice.findMany({
+            where: {
+                date: today
+            },
+            orderBy: {
+                vegetable_name: 'asc'
+            }
+        });
+
+        res.json({
+            success: true,
+            data: { prices }
+        });
+    } catch (error) {
+        console.error('Error fetching daily prices:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch daily prices'
         });
     }
 };
@@ -430,19 +540,7 @@ export const recordPayment = async (req, res) => {
             });
         }
 
-        // Create payment record
-        await prisma.payment.create({
-            data: {
-                buyer_id: userId,
-                farmer_id: parseInt(farmer_id),
-                amount: parseFloat(amount),
-                mode: mode,
-                transaction_ref: transaction_ref || null,
-                payment_date: new Date()
-            }
-        });
-
-        // Calculate remaining balance
+        // Get pending invoices for this farmer (oldest first)
         const invoices = await prisma.invoice.findMany({
             where: {
                 farmer_id: parseInt(farmer_id),
@@ -450,14 +548,102 @@ export const recordPayment = async (req, res) => {
             },
             include: {
                 payments: true
+            },
+            orderBy: {
+                date: 'asc' // Pay oldest invoices first
             }
         });
 
-        let remainingBalance = 0;
-        for (const invoice of invoices) {
-            const totalPaid = invoice.payments.reduce((sum, payment) => sum + payment.amount, 0);
-            remainingBalance += (invoice.grand_total - totalPaid);
+        if (invoices.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No pending invoices found for this farmer'
+            });
         }
+
+        // Allocate payment to invoices (oldest first)
+        let remainingPayment = parseFloat(amount);
+        let remainingBalance = 0;
+
+        for (const invoice of invoices) {
+            if (remainingPayment <= 0) {
+                // No more payment to allocate, just calculate remaining balance
+                const totalPaid = invoice.payments.reduce((sum, payment) => sum + payment.amount, 0);
+                remainingBalance += (invoice.grand_total - totalPaid);
+                continue;
+            }
+
+            // Calculate current balance for this invoice
+            const totalPaid = invoice.payments.reduce((sum, payment) => sum + payment.amount, 0);
+            const invoiceBalance = invoice.grand_total - totalPaid;
+
+            if (invoiceBalance > 0) {
+                // Determine how much to pay towards this invoice
+                const paymentForThisInvoice = Math.min(remainingPayment, invoiceBalance);
+
+                // Create payment record linked to this invoice
+                await prisma.payment.create({
+                    data: {
+                        invoice_id: invoice.id,
+                        buyer_id: userId,
+                        farmer_id: parseInt(farmer_id),
+                        amount: paymentForThisInvoice,
+                        mode: mode,
+                        transaction_ref: transaction_ref || null,
+                        payment_date: new Date()
+                    }
+                });
+
+                remainingPayment -= paymentForThisInvoice;
+
+                // Check if invoice is now fully paid
+                const newTotalPaid = totalPaid + paymentForThisInvoice;
+                if (newTotalPaid >= invoice.grand_total) {
+                    // Mark invoice as PAID
+                    await prisma.invoice.update({
+                        where: { id: invoice.id },
+                        data: { status: 'PAID' }
+                    });
+                } else {
+                    // Still has balance
+                    remainingBalance += (invoice.grand_total - newTotalPaid);
+                }
+            }
+        }
+
+        // Get buyer information for WhatsApp message
+        const buyer = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { full_name: true, business_name: true }
+        });
+
+        const buyerName = buyer?.business_name || buyer?.full_name || 'Buyer';
+
+        // Send WhatsApp notification to farmer (non-blocking)
+        const totalPaidToFarmer = parseFloat(amount);
+        whatsAppService.sendCustomMessage(
+            {
+                name: farmer.full_name,
+                phone: farmer.phone_number
+            },
+            `💰 Payment Received!
+
+Dear ${farmer.full_name},
+
+${buyerName} has sent you a payment:
+
+Amount Received: ₹${totalPaidToFarmer.toFixed(2)}
+Payment Mode: ${mode === 'BANK_TRANSFER' ? 'Bank Transfer' : mode}
+${transaction_ref ? `Transaction Ref: ${transaction_ref}\n` : ''}Date: ${new Date().toLocaleDateString('en-IN')}
+
+${remainingBalance > 0
+                ? `Remaining Balance: ₹${remainingBalance.toFixed(2)}`
+                : '✅ All dues cleared! Thank you!'}
+
+Thank you for your produce! 🙏`
+        ).catch(error => {
+            console.error('WhatsApp notification failed:', error.message);
+        });
 
         res.status(201).json({
             success: true,
@@ -471,6 +657,95 @@ export const recordPayment = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to record payment'
+        });
+    }
+};
+
+
+
+// Create or update planned route
+export const createPlannedRoute = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const { bookingIds, routeMetrics } = req.body;
+
+        if (!bookingIds || bookingIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'At least one booking is required'
+            });
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Check if route already exists for today
+        let route = await prisma.route.findFirst({
+            where: {
+                buyer_id: userId,
+                date: {
+                    gte: today,
+                    lt: new Date(today.getTime() + 24 * 60 * 60 * 1000)
+                },
+                status: 'PLANNED'
+            }
+        });
+
+        if (!route) {
+            // Create new route
+            route = await prisma.route.create({
+                data: {
+                    buyer_id: userId,
+                    date: today,
+                    total_distance: routeMetrics?.distance || 0,
+                    status: 'PLANNED'
+                }
+            });
+        } else {
+            // Update existing route
+            route = await prisma.route.update({
+                where: { id: route.id },
+                data: {
+                    total_distance: routeMetrics?.distance || 0
+                }
+            });
+
+            // Delete existing route stops
+            await prisma.routeStop.deleteMany({
+                where: { route_id: route.id }
+            });
+        }
+
+        // Create route stops and update booking statuses
+        for (let i = 0; i < bookingIds.length; i++) {
+            const bookingId = bookingIds[i];
+
+            // Create route stop
+            await prisma.routeStop.create({
+                data: {
+                    route_id: route.id,
+                    booking_id: bookingId,
+                    sequence_order: i + 1
+                }
+            });
+
+            // Update booking status to ROUTED
+            await prisma.booking.update({
+                where: { id: bookingId },
+                data: { status: 'ROUTED' }
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Route planned successfully',
+            data: { route }
+        });
+    } catch (error) {
+        console.error('Error creating planned route:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to create planned route'
         });
     }
 };

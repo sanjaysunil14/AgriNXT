@@ -5,8 +5,20 @@ import {
     updateUser,
     toggleBanUser,
     deleteUser,
-    getAuditLogs
+    getAuditLogs,
+    getUnpricedCollections,
+    setDailyPrices,
+    getAllInvoices,
+    downloadInvoicePDF
 } from '../controllers/adminController.js';
+import {
+    getProfitSummary,
+    updateDeliveryRate,
+    updateSellingPrice,
+    getSellingPrices,
+    getDailyPrices,
+    getConfig
+} from '../controllers/profitabilityController.js';
 import { verifyToken } from '../middleware/authMiddleware.js';
 import { requireRole } from '../middleware/roleMiddleware.js';
 
@@ -26,5 +38,19 @@ router.delete('/users/:id', deleteUser);
 
 // Audit Logs
 router.get('/audit-logs', getAuditLogs);
+
+// Pricing & Invoices (Admin only)
+router.get('/unpriced-collections', getUnpricedCollections);
+router.post('/set-daily-prices', setDailyPrices);
+router.get('/invoices', getAllInvoices);
+router.get('/invoices/:id/download', downloadInvoicePDF);
+
+// Profitability Analysis
+router.get('/profit-summary', getProfitSummary);
+router.post('/update-delivery-rate', updateDeliveryRate);
+router.post('/update-selling-price', updateSellingPrice);
+router.get('/selling-prices', getSellingPrices);
+router.get('/daily-prices', getDailyPrices);
+router.get('/system-config', getConfig);
 
 export default router;

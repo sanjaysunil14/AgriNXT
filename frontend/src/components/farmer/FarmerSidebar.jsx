@@ -1,10 +1,26 @@
-import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, History, User, X } from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, History, FileText, User, X, LogOut } from 'lucide-react';
+import api from '../../utils/api';
 
 export default function FarmerSidebar({ isOpen, onClose }) {
+    const navigate = useNavigate();
+
+    const handleLogout = async () => {
+        try {
+            await api.post('/auth/logout');
+            sessionStorage.removeItem('accessToken');
+            navigate('/');
+        } catch (error) {
+            console.error('Logout error:', error);
+            sessionStorage.removeItem('accessToken');
+            navigate('/');
+        }
+    };
+
     const navItems = [
         { to: '/farmer', icon: LayoutDashboard, label: 'Dashboard', end: true },
         { to: '/farmer/history', icon: History, label: 'History' },
+        { to: '/farmer/invoices', icon: FileText, label: 'Invoices' },
         { to: '/farmer/profile', icon: User, label: 'Profile & Settings' }
     ];
 
@@ -20,36 +36,35 @@ export default function FarmerSidebar({ isOpen, onClose }) {
 
             {/* Sidebar */}
             <aside
-                className={`
-          fixed lg:static inset-y-0 left-0 z-30
-          w-64 bg-white border-r border-gray-200
-          transform transition-transform duration-300 ease-in-out
-          ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        `}
+                className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-gray-900 border-r border-gray-800 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+                    }`}
             >
                 <div className="h-full flex flex-col">
                     {/* Logo/Header */}
-                    <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200">
-                        <h1 className="text-xl font-bold text-gray-900">Farmer Portal</h1>
+                    <div className="flex items-center justify-between p-6 border-b border-gray-800">
+                        <div>
+                            <h1 className="text-xl font-bold text-white">Farmer Portal</h1>
+                            <p className="text-xs text-gray-400">Procurement System</p>
+                        </div>
                         <button
                             onClick={onClose}
-                            className="lg:hidden p-2 hover:bg-gray-100 rounded-lg"
+                            className="lg:hidden p-1 hover:bg-gray-800 rounded-lg transition-colors"
                         >
-                            <X className="w-5 h-5" />
+                            <X className="w-5 h-5 text-gray-400" />
                         </button>
                     </div>
 
                     {/* Navigation */}
-                    <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+                    <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
                         {navItems.map((item) => (
                             <NavLink
                                 key={item.to}
                                 to={item.to}
                                 end={item.end}
                                 className={({ isActive }) =>
-                                    `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
-                                        ? 'bg-primary-50 text-primary-700 font-semibold'
-                                        : 'text-gray-700 hover:bg-gray-100'
+                                    `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 relative ${isActive
+                                        ? 'bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold shadow-lg before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-green-400 before:rounded-l-lg'
+                                        : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                                     }`
                                 }
                             >
@@ -59,11 +74,15 @@ export default function FarmerSidebar({ isOpen, onClose }) {
                         ))}
                     </nav>
 
-                    {/* Footer */}
-                    <div className="p-4 border-t border-gray-200">
-                        <p className="text-xs text-gray-500 text-center">
-                            Farmer Module v1.0
-                        </p>
+                    {/* Logout */}
+                    <div className="p-4 border-t border-gray-800">
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-3 px-4 py-3 w-full text-red-400 hover:bg-red-900/20 hover:text-red-300 rounded-lg transition-all duration-200 font-medium"
+                        >
+                            <LogOut className="w-5 h-5" />
+                            <span>Logout</span>
+                        </button>
                     </div>
                 </div>
             </aside>

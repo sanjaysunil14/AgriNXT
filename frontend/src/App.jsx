@@ -17,9 +17,13 @@ import Settings from './pages/admin/Settings';
 import FarmerDashboard from './pages/farmer/FarmerDashboard';
 import FarmerHistory from './pages/farmer/FarmerHistory';
 import FarmerProfile from './pages/farmer/FarmerProfile';
+import FarmerInvoices from './pages/farmer/FarmerInvoices';
 import BuyerFieldRoute from './pages/buyer/BuyerFieldRoute';
 import BuyerPricing from './pages/buyer/BuyerPricing';
 import BuyerPayments from './pages/buyer/BuyerPayments';
+import BuyerInvoices from './pages/buyer/BuyerInvoices';
+import SetDailyPrices from './pages/admin/SetDailyPrices';
+import InvoiceManagement from './pages/admin/InvoiceManagement';
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -57,6 +61,8 @@ function App() {
                         <Route path="users" element={<UserManagement />} />
                         <Route path="approvals" element={<UserApprovals />} />
                         <Route path="audit-logs" element={<AuditLogs />} />
+                        <Route path="set-prices" element={<SetDailyPrices />} />
+                        <Route path="invoices" element={<InvoiceManagement />} />
                         <Route path="settings" element={<Settings />} />
                     </Route>
 
@@ -76,6 +82,7 @@ function App() {
                     >
                         <Route index element={<FarmerDashboard />} />
                         <Route path="history" element={<FarmerHistory />} />
+                        <Route path="invoices" element={<FarmerInvoices />} />
                         <Route path="profile" element={<FarmerProfile />} />
                     </Route>
 
@@ -93,6 +100,7 @@ function App() {
                         <Route index element={<BuyerFieldRoute />} />
                         <Route path="pricing" element={<BuyerPricing />} />
                         <Route path="payments" element={<BuyerPayments />} />
+                        <Route path="invoices" element={<BuyerInvoices />} />
                     </Route>
 
                     {/* Legacy buyer dashboard route - redirect to new buyer */}

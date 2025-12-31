@@ -1,165 +1,130 @@
 import { useState, useEffect } from 'react';
-import { DollarSign, TrendingUp } from 'lucide-react';
-import Card from '../../components/ui/Card';
-import Input from '../../components/ui/Input';
-import Button from '../../components/ui/Button';
+import { DollarSign, Eye, Info } from 'lucide-react';
 import { useToast } from '../../components/ui/Toast';
 import api from '../../utils/api';
 
 export default function BuyerPricing() {
+    const [prices, setPrices] = useState([]);
     const [vegetables, setVegetables] = useState([]);
-    const [prices, setPrices] = useState({});
     const [loading, setLoading] = useState(false);
-    const [generating, setGenerating] = useState(false);
-    const [result, setResult] = useState(null);
     const { addToast } = useToast();
 
     useEffect(() => {
-        fetchUnpricedVegetables();
+        fetchData();
     }, []);
 
-    const fetchUnpricedVegetables = async () => {
+    const fetchData = async () => {
         setLoading(true);
         try {
-            // This would ideally be a separate endpoint, but we'll use the route endpoint
-            // and extract unique vegetables from unpriced collections
-            const response = await api.get('/buyer/route');
-            const bookings = response.data.data.bookings;
+            // Fetch today's prices (set by Admin)
+            const pricesResponse = await api.get('/buyer/daily-prices');
+            setPrices(pricesResponse.data.data.prices);
 
-            // Extract unique vegetables
-            const uniqueVegetables = [...new Set(
-                bookings
-                    .map(b => b.vegetable_type)
-                    .filter(v => v)
-            )];
-
-            setVegetables(uniqueVegetables);
-
-            // Initialize prices object
-            const initialPrices = {};
-            uniqueVegetables.forEach(veg => {
-                initialPrices[veg] = '';
-            });
-            setPrices(initialPrices);
+            // Fetch collected vegetables for reference
+            const veggiesResponse = await api.get('/buyer/unpriced-collections');
+            setVegetables(veggiesResponse.data.data.vegetables);
         } catch (error) {
-            addToast('Failed to fetch vegetables', 'error');
+            addToast('Failed to fetch pricing data', 'error');
         } finally {
             setLoading(false);
         }
     };
 
-    const handlePriceChange = (vegetable, value) => {
-        setPrices({
-            ...prices,
-            [vegetable]: value
+    const formatDate = (dateString) => {
+        return new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
         });
     };
 
-    const handleGenerateInvoices = async (e) => {
-        e.preventDefault();
-
-        // Validation
-        const emptyPrices = Object.entries(prices).filter(([_, price]) => !price || parseFloat(price) <= 0);
-        if (emptyPrices.length > 0) {
-            addToast('Please enter valid prices for all vegetables', 'error');
-            return;
-        }
-
-        setGenerating(true);
-        setResult(null);
-
-        try {
-            const response = await api.post('/buyer/set-daily-prices', {
-                prices: Object.fromEntries(
-                    Object.entries(prices).map(([veg, price]) => [veg, parseFloat(price)])
-                ),
-                date: new Date().toISOString().split('T')[0]
-            });
-
-            setResult(response.data.data);
-            addToast(response.data.message, 'success');
-
-            // Refresh vegetables list
-            fetchUnpricedVegetables();
-        } catch (error) {
-            addToast(error.response?.data?.message || 'Failed to generate invoices', 'error');
-        } finally {
-            setGenerating(false);
-        }
-    };
-
     return (
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 bg-gray-50">
             {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900">Daily Pricing</h1>
-                <p className="text-gray-600">Set vegetable prices and generate invoices</p>
+            <div className="mb-6">
+                <h1 className="text-3xl font-bold text-gray-900">View Daily Prices</h1>
+                <p className="text-gray-600 mt-1">View today's vegetable prices (set by Admin)</p>
             </div>
 
-            {/* Pricing Form */}
-            <Card>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <DollarSign className="w-5 h-5" />
-                    Today's Vegetable Prices
+            {/* Info Alert */}
+            <div className="bg-blue-50 border-l-4 border-blue-400 rounded-lg p-4 flex items-start gap-3 shadow-sm">
+                <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                    <p className="text-sm font-bold text-blue-900">
+                        Prices are set by Admin
+                    </p>
+                    <p className="text-sm text-blue-700 mt-1">
+                        You can view today's prices below. Invoices are automatically generated when Admin sets the prices.
+                    </p>
+                </div>
+            </div>
+
+            {/* Today's Prices */}
+            <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <Eye className="w-5 h-5 text-green-600" />
+                    Today's Prices ({prices.length > 0 ? formatDate(prices[0]?.date) : 'Not Set'})
                 </h2>
 
                 {loading ? (
-                    <div className="text-center py-8 text-gray-500">Loading vegetables...</div>
-                ) : vegetables.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">Loading prices...</div>
+                ) : prices.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
-                        No unpriced collections for today. Complete some collections first.
+                        No prices set for today yet. Admin will set prices soon.
                     </div>
                 ) : (
-                    <form onSubmit={handleGenerateInvoices} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {vegetables.map((vegetable) => (
-                                <div key={vegetable} className="flex items-center gap-3">
-                                    <div className="flex-1">
-                                        <Input
-                                            label={vegetable}
-                                            type="number"
-                                            step="0.01"
-                                            placeholder="Price per KG"
-                                            value={prices[vegetable] || ''}
-                                            onChange={(e) => handlePriceChange(vegetable, e.target.value)}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="text-sm text-gray-500 mt-6">₹/KG</div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="pt-4">
-                            <Button
-                                type="submit"
-                                variant="primary"
-                                loading={generating}
-                                icon={TrendingUp}
-                                className="w-full md:w-auto"
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {prices.map((price) => (
+                            <div
+                                key={price.vegetable_name}
+                                className="bg-gradient-to-br from-green-50 to-green-100 p-5 rounded-xl border-l-4 border-green-500 shadow-sm hover:shadow-md transition-shadow"
                             >
-                                Generate Invoices
-                            </Button>
-                        </div>
-                    </form>
-                )}
-            </Card>
-
-            {/* Result Summary */}
-            {result && (
-                <Card>
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Generation Summary</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-green-50 p-4 rounded-lg">
-                            <p className="text-sm text-green-600 font-medium">Invoices Generated</p>
-                            <p className="text-2xl font-bold text-green-900">{result.invoices_generated}</p>
-                        </div>
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                            <p className="text-sm text-blue-600 font-medium">Total Amount</p>
-                            <p className="text-2xl font-bold text-blue-900">₹{result.total_amount.toFixed(2)}</p>
-                        </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex-1">
+                                        <p className="text-sm font-semibold text-green-700 uppercase tracking-wide mb-1">
+                                            {price.vegetable_name}
+                                        </p>
+                                        <p className="text-3xl font-bold text-gray-900">
+                                            ₹{price.price_per_kg.toFixed(2)}
+                                        </p>
+                                        <p className="text-xs text-gray-600 mt-1">per KG</p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center shadow-md">
+                                        <DollarSign className="w-6 h-6 text-white" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                </Card>
+                )}
+            </div>
+
+            {/* Collected Vegetables Summary */}
+            {vegetables.length > 0 && (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h2 className="text-lg font-bold text-gray-900 mb-4">Your Collected Vegetables (Unpriced)</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {vegetables.map((veg) => (
+                            <div
+                                key={veg.vegetable}
+                                className="bg-gray-50 p-4 rounded-lg border border-gray-200"
+                            >
+                                <p className="font-semibold text-gray-900">{veg.vegetable}</p>
+                                <p className="text-sm text-gray-600 mt-1">
+                                    Total Weight: <span className="font-bold">{veg.totalWeight.toFixed(2)} KG</span>
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {veg.count} collection(s)
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <p className="text-sm text-yellow-800">
+                            <strong>Note:</strong> Invoices will be automatically generated once Admin sets the prices for these vegetables.
+                        </p>
+                    </div>
+                </div>
             )}
         </div>
     );

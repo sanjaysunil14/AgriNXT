@@ -8,8 +8,10 @@ import {
     cancelBooking,
     getHistory,
     updatePaymentDetails,
-    getProfile
+    getProfile,
+    getTodaysRoute
 } from '../controllers/farmerController.js';
+import { getFarmerInvoices } from '../controllers/invoiceController.js';
 
 const router = express.Router();
 
@@ -22,10 +24,14 @@ router.get('/stats', getDashboardStats);
 // Bookings
 router.post('/bookings', createBooking);
 router.get('/bookings', getMyBookings);
+router.get('/todays-route', getTodaysRoute);
 router.put('/bookings/:id/cancel', cancelBooking);
 
 // History
 router.get('/history', getHistory);
+
+// Invoices
+router.get('/invoices', getFarmerInvoices);
 
 // Profile
 router.get('/profile', getProfile);

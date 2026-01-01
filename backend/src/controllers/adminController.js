@@ -130,6 +130,7 @@ export const updateUser = async (req, res) => {
         // Log audit action
         await logAuditAction(
             adminId,
+            'ADMIN',
             'UPDATE_USER',
             parseInt(id),
             `Updated user: ${full_name}, role: ${role}`,
@@ -182,6 +183,7 @@ export const toggleBanUser = async (req, res) => {
         // Log audit action
         await logAuditAction(
             adminId,
+            'ADMIN',
             updatedUser.is_active ? 'UNBAN_USER' : 'BAN_USER',
             parseInt(id),
             `${updatedUser.is_active ? 'Unbanned' : 'Banned'} user: ${user.full_name}`,
@@ -226,6 +228,7 @@ export const deleteUser = async (req, res) => {
         // Log audit action
         await logAuditAction(
             adminId,
+            'ADMIN',
             'DELETE_USER',
             parseInt(id),
             `Deleted user: ${user.full_name}`,
@@ -248,16 +251,60 @@ export const deleteUser = async (req, res) => {
 // Get audit logs
 export const getAuditLogs = async (req, res) => {
     try {
-        const { page = 1, limit = 20 } = req.query;
+        const {
+            page = 1,
+            limit = 20,
+            startDate,
+            endDate,
+            user,
+            action
+        } = req.query;
+
         const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        // Build filter conditions
+        const where = {};
+
+        // Date range filter
+        if (startDate || endDate) {
+            where.created_at = {};
+            if (startDate) {
+                where.created_at.gte = new Date(startDate);
+            }
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                where.created_at.lte = end;
+            }
+        }
+
+        // User search filter (partial match on name)
+        if (user) {
+            where.user = {
+                full_name: {
+                    contains: user,
+                    mode: 'insensitive'
+                }
+            };
+        }
+
+        // Action filter
+        if (action && action !== 'ALL') {
+            where.action = {
+                contains: action,
+                mode: 'insensitive'
+            };
+        }
 
         const [logs, total] = await Promise.all([
             prisma.auditLog.findMany({
+                where,
                 include: {
-                    admin: {
+                    user: {
                         select: {
                             id: true,
-                            full_name: true
+                            full_name: true,
+                            role: true
                         }
                     },
                     target_user: {
@@ -271,7 +318,7 @@ export const getAuditLogs = async (req, res) => {
                 take: parseInt(limit),
                 orderBy: { created_at: 'desc' }
             }),
-            prisma.auditLog.count()
+            prisma.auditLog.count({ where })
         ]);
 
         res.status(200).json({
@@ -481,6 +528,7 @@ export const setDailyPrices = async (req, res) => {
         // Log audit action
         await logAuditAction(
             adminId,
+            'ADMIN',
             'SET_DAILY_PRICES',
             null,
             `Set prices for ${Object.keys(prices).length} vegetables, generated ${invoicesGenerated} invoices`,

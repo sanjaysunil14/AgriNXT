@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import whatsAppService from '../services/WhatsAppService.js';
+import { logAuditAction } from '../utils/auditLogger.js';
 
 const prisma = new PrismaClient();
 
@@ -205,6 +206,16 @@ export const collectProduce = async (req, res) => {
             // Log error but don't fail the request
             console.error('WhatsApp notification failed:', error.message);
         });
+
+        // Log audit action
+        await logAuditAction(
+            userId,
+            'BUYER',
+            'COLLECTION_RECORDED',
+            booking.farmer.user_id,
+            `Buyer collected ${totalWeight}kg from Farmer ${booking.farmer.user.full_name}`,
+            req.ip
+        );
 
         res.status(201).json({
             success: true,
@@ -644,6 +655,16 @@ Thank you for your produce! 🙏`
         ).catch(error => {
             console.error('WhatsApp notification failed:', error.message);
         });
+
+        // Log audit action
+        await logAuditAction(
+            userId,
+            'BUYER',
+            'PAYMENT_RECORDED',
+            parseInt(farmer_id),
+            `Buyer recorded a payment of ₹${amount} to Farmer ${farmer.full_name}`,
+            req.ip
+        );
 
         res.status(201).json({
             success: true,

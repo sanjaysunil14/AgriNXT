@@ -105,7 +105,7 @@ model User {
   farmer_invoices   Invoice[]        @relation("FarmerInvoices")
   buyer_payments    Payment[]        @relation("BuyerPayments")
   farmer_payments   Payment[]        @relation("FarmerPayments")
-  audit_logs        AuditLog[]       @relation("AdminActions")
+  audit_logs        AuditLog[]       @relation("UserActions")
   audit_targets     AuditLog[]       @relation("TargetUser")
 
   @@map("users")
@@ -113,7 +113,8 @@ model User {
 
 model AuditLog {
   id             Int      @id @default(autoincrement())
-  admin_id       Int
+  user_id        Int?
+  user_role      Role?
   action         String
   target_user_id Int?
   details        String?
@@ -121,7 +122,7 @@ model AuditLog {
   created_at     DateTime @default(now())
 
   // Relations
-  admin       User  @relation("AdminActions", fields: [admin_id], references: [id], onDelete: Cascade)
+  user        User? @relation("UserActions", fields: [user_id], references: [id], onDelete: SetNull)
   target_user User? @relation("TargetUser", fields: [target_user_id], references: [id], onDelete: SetNull)
 
   @@map("audit_logs")

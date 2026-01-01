@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { logAuditAction } from '../utils/auditLogger.js';
 
 const prisma = new PrismaClient();
 
@@ -113,6 +114,16 @@ export const createBooking = async (req, res) => {
                 status: 'PENDING'
             }
         });
+
+        // Log audit action
+        await logAuditAction(
+            userId,
+            'FARMER',
+            'BOOKING_CREATED',
+            null,
+            `Farmer ${user.full_name} created a booking for ${collectionDate.toLocaleDateString()}`,
+            req.ip
+        );
 
         res.status(201).json({
             success: true,

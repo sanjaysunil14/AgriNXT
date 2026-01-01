@@ -2,11 +2,12 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export async function logAuditAction(adminId, action, targetUserId = null, details = null, ipAddress = null) {
+export async function logAuditAction(userId, userRole, action, targetUserId = null, details = null, ipAddress = null) {
     try {
         await prisma.auditLog.create({
             data: {
-                admin_id: adminId,
+                user_id: userId,
+                user_role: userRole,
                 action,
                 target_user_id: targetUserId,
                 details,

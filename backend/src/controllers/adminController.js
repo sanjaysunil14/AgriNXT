@@ -1,5 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { logAuditAction } from '../utils/auditLogger.js';
+import { generateBuyerStats } from '../services/buyerPerformanceService.js';
+import { generatePerformanceSummary, generateComparativeInsights } from '../services/aiSummaryService.js';
 
 const prisma = new PrismaClient();
 
@@ -608,6 +610,106 @@ export const downloadInvoicePDF = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to download invoice'
+        });
+    }
+};
+
+/**
+ * Get AI-powered buyer performance summary
+ * @route GET /api/admin/performance-summary
+ */
+export const getPerformanceSummary = async (req, res) => {
+    try {
+        const { start_date, end_date } = req.query;
+
+        // Default to today if no dates provided
+        const startDate = start_date ? new Date(start_date) : new Date();
+        const endDate = end_date ? new Date(end_date) : new Date();
+
+        // Set time ranges
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+
+        // Generate buyer statistics
+        const dailyStats = await generateBuyerStats(startDate, endDate);
+
+        // Check if we have data
+        if (Object.keys(dailyStats).length === 0) {
+            return res.json({
+                success: true,
+                data: {
+                    summary: 'No performance data available for the selected period.',
+                    stats: {},
+                    insights: null
+                }
+            });
+        }
+
+        // Generate AI summary
+        const aiSummary = await generatePerformanceSummary(dailyStats);
+
+        // Generate comparative insights
+        const insights = generateComparativeInsights(dailyStats);
+
+        res.json({
+            success: true,
+            data: {
+                summary: aiSummary,
+                stats: dailyStats,
+                insights: insights,
+                period: {
+                    start: startDate.toISOString(),
+                    end: endDate.toISOString()
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error getting performance summary:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to generate performance summary',
+            error: error.message
+        });
+    }
+};
+
+/**
+ * Get detailed zone performance comparison
+ * @route GET /api/admin/zone-comparison
+ */
+export const getZoneComparison = async (req, res) => {
+    try {
+        const { start_date, end_date } = req.query;
+
+        const startDate = start_date ? new Date(start_date) : new Date();
+        const endDate = end_date ? new Date(end_date) : new Date();
+
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+
+        // Generate buyer statistics
+        const dailyStats = await generateBuyerStats(startDate, endDate);
+
+        // Generate comparative insights
+        const insights = generateComparativeInsights(dailyStats);
+
+        res.json({
+            success: true,
+            data: {
+                zones: dailyStats,
+                insights: insights,
+                period: {
+                    start: startDate.toISOString(),
+                    end: endDate.toISOString()
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error getting zone comparison:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get zone comparison',
+            error: error.message
         });
     }
 };

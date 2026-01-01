@@ -9,7 +9,9 @@ import {
     getUnpricedCollections,
     setDailyPrices,
     getAllInvoices,
-    downloadInvoicePDF
+    downloadInvoicePDF,
+    getPerformanceSummary,
+    getZoneComparison
 } from '../controllers/adminController.js';
 import {
     getProfitSummary,
@@ -52,5 +54,9 @@ router.post('/update-selling-price', updateSellingPrice);
 router.get('/selling-prices', getSellingPrices);
 router.get('/daily-prices', getDailyPrices);
 router.get('/system-config', getConfig);
+
+// AI Performance Analytics
+router.get('/performance-summary', getPerformanceSummary);
+router.get('/zone-comparison', getZoneComparison);
 
 export default router;

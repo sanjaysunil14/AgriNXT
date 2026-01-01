@@ -1,13 +1,14 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { getZoneFromDistrict } from '../utils/districtZoneMapper.js';
 
 const prisma = new PrismaClient();
 
 // Register a new user
 export const register = async (req, res) => {
   try {
-    const { full_name, phone_number, email, password, role, latitude, longitude, business_name, address } = req.body;
+    const { full_name, phone_number, email, password, role, latitude, longitude, district, business_name, address } = req.body;
 
     // Validate required fields
     if (!full_name || !phone_number || !password || !role) {
@@ -27,17 +28,17 @@ export const register = async (req, res) => {
     }
 
     // Role-specific validation
-    if (role === 'FARMER' && (!latitude || !longitude)) {
+    if (role === 'FARMER' && (!latitude || !longitude || !district)) {
       return res.status(400).json({
         success: false,
-        message: 'Location coordinates are required for farmers'
+        message: 'Location coordinates and district are required for farmers'
       });
     }
 
-    if (role === 'BUYER' && !business_name) {
-      return res.status(400).json({
+    if (role === 'BUYER') {
+      return res.status(403).json({
         success: false,
-        message: 'Business name is required for buyers'
+        message: 'Buyer registration is currently disabled. The system operates with fixed zone buyers. Please contact admin for access.'
       });
     }
 
@@ -77,7 +78,7 @@ export const register = async (req, res) => {
       email,
       password_hash,
       role,
-      status: 'PENDING', // New farmers and buyers need approval
+      status: 'PENDING', // New farmers need approval
       is_active: true
     };
 
@@ -85,9 +86,17 @@ export const register = async (req, res) => {
     if (role === 'FARMER') {
       userData.latitude = parseFloat(latitude);
       userData.longitude = parseFloat(longitude);
-    } else if (role === 'BUYER') {
-      userData.business_name = business_name;
-      userData.address = address;
+      userData.district = district;
+
+      // Auto-assign zone based on district
+      const assignedZone = getZoneFromDistrict(district);
+      if (!assignedZone) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid district: ${district}. Please provide a valid Tamil Nadu district.`
+        });
+      }
+      userData.zone = assignedZone;
     }
 
     // Create user

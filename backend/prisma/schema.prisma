@@ -59,6 +59,13 @@ enum PaymentStatus {
   FAILED
 }
 
+enum Zone {
+  NORTH
+  SOUTH
+  EAST
+  WEST
+}
+
 model User {
   id            Int             @id @default(autoincrement())
   full_name     String
@@ -77,6 +84,10 @@ model User {
   // Farmer-specific location fields (GPS coordinates)
   latitude      Float?
   longitude     Float?
+  
+  // Zone assignment for buyers and farmers
+  zone          Zone?
+  district      String?         // District name for farmers (Tamil Nadu)
   
   // Farmer payment details
   payment_method PaymentMethod?

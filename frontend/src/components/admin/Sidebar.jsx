@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Settings, FileText, X, UserCheck, LogOut, DollarSign, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Users, Settings, FileText, X, UserCheck, LogOut, DollarSign, TrendingUp, Sparkles } from 'lucide-react';
 import api from '../../utils/api';
 
 export default function Sidebar({ isOpen, onClose }) {
@@ -23,6 +23,7 @@ export default function Sidebar({ isOpen, onClose }) {
         { to: '/admin/approvals', icon: UserCheck, label: 'User Approvals' },
         { to: '/admin/set-prices', icon: DollarSign, label: 'Set Daily Prices' },
         { to: '/admin/profitability', icon: TrendingUp, label: 'Profitability Analysis' },
+        { to: '/admin/performance', icon: Sparkles, label: 'AI Performance Summary' },
         { to: '/admin/invoices', icon: FileText, label: 'Invoice Management' },
         { to: '/admin/audit-logs', icon: FileText, label: 'Audit Logs' },
         { to: '/admin/settings', icon: Settings, label: 'Settings' }

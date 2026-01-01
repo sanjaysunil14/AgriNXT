@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Search, Edit, Ban, Trash2, Shield, CheckCircle, XCircle } from 'lucide-react';
+import { Search, Edit, Ban, Trash2, Shield, CheckCircle, XCircle, Users } from 'lucide-react';
 import Table from '../../components/ui/Table';
 import Input from '../../components/ui/Input';
-import Button from '../../components/ui/Button';
 import Avatar from '../../components/ui/Avatar';
 import Dropdown, { DropdownItem } from '../../components/ui/Dropdown';
 import EditUserModal from '../../components/admin/EditUserModal';
@@ -74,13 +73,13 @@ export default function UserManagement() {
 
     const columns = [
         {
-            header: 'User',
+            header: 'User Profile',
             render: (user) => (
-                <div className="flex items-center gap-3">
-                    <Avatar name={user.full_name} size="md" />
+                <div className="flex items-center gap-4">
+                    <Avatar name={user.full_name} size="md" className="ring-2 ring-white shadow-md" />
                     <div>
-                        <p className="font-medium text-gray-900">{user.full_name}</p>
-                        <p className="text-sm text-gray-500">{user.phone_number}</p>
+                        <p className="font-bold text-gray-900">{user.full_name}</p>
+                        <p className="text-sm text-gray-500 font-medium">{user.phone_number}</p>
                     </div>
                 </div>
             )
@@ -88,9 +87,9 @@ export default function UserManagement() {
         {
             header: 'Role',
             render: (user) => (
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' :
-                        user.role === 'BUYER' ? 'bg-blue-100 text-blue-700' :
-                            'bg-green-100 text-green-700'
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${user.role === 'ADMIN' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                    user.role === 'BUYER' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                        'bg-emerald-50 text-emerald-700 border-emerald-200'
                     }`}>
                     <Shield className="w-3 h-3" />
                     {user.role}
@@ -100,7 +99,7 @@ export default function UserManagement() {
         {
             header: 'Status',
             render: (user) => (
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${user.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${user.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                     }`}>
                     {user.is_active ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
                     {user.is_active ? 'Active' : 'Banned'}
@@ -109,7 +108,11 @@ export default function UserManagement() {
         },
         {
             header: 'Join Date',
-            render: (user) => new Date(user.created_at).toLocaleDateString()
+            render: (user) => (
+                <span className="text-gray-600 font-medium text-sm">
+                    {new Date(user.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                </span>
+            )
         },
         {
             header: 'Actions',
@@ -119,20 +122,22 @@ export default function UserManagement() {
                         icon={Edit}
                         onClick={() => setEditModal({ isOpen: true, user })}
                     >
-                        Edit User
+                        Edit Details
                     </DropdownItem>
                     <DropdownItem
                         icon={Ban}
                         onClick={() => handleBanToggle(user)}
+                        className={user.is_active ? 'text-orange-600' : 'text-green-600'}
                     >
-                        {user.is_active ? 'Ban User' : 'Unban User'}
+                        {user.is_active ? 'Suspend Access' : 'Restore Access'}
                     </DropdownItem>
+                    <div className="h-px bg-gray-100 my-1"></div>
                     <DropdownItem
                         icon={Trash2}
                         variant="danger"
                         onClick={() => setDeleteModal({ isOpen: true, user })}
                     >
-                        Delete User
+                        Permanently Delete
                     </DropdownItem>
                 </Dropdown>
             )
@@ -140,16 +145,23 @@ export default function UserManagement() {
     ];
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="p-8 space-y-8 bg-gray-50/50 min-h-screen">
             {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-                <p className="text-gray-600">Manage all users in the system</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+                    <p className="text-gray-500 mt-1">Directory of all registered system participants</p>
+                </div>
+                <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
+                    <div className="bg-emerald-100 p-2 rounded-xl">
+                        <Users className="w-6 h-6 text-emerald-600" />
+                    </div>
+                </div>
             </div>
 
             {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-4 items-center">
+                <div className="flex-1 w-full">
                     <Input
                         icon={Search}
                         placeholder="Search by name or phone..."
@@ -158,6 +170,8 @@ export default function UserManagement() {
                             setSearch(e.target.value);
                             setCurrentPage(1);
                         }}
+                        className="bg-gray-50 border-transparent focus:bg-white"
+                        containerClassName="m-0"
                     />
                 </div>
                 <select
@@ -166,7 +180,7 @@ export default function UserManagement() {
                         setRoleFilter(e.target.value);
                         setCurrentPage(1);
                     }}
-                    className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full sm:w-48 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 font-medium focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none cursor-pointer hover:bg-white transition-colors"
                 >
                     <option value="">All Roles</option>
                     <option value="ADMIN">Admin</option>
@@ -176,12 +190,12 @@ export default function UserManagement() {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+            <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 overflow-hidden border border-gray-100">
                 <Table
                     columns={columns}
                     data={users}
                     loading={loading}
-                    emptyMessage="No users found"
+                    emptyMessage="No users matching your criteria found"
                     pagination={pagination}
                     onPageChange={setCurrentPage}
                 />

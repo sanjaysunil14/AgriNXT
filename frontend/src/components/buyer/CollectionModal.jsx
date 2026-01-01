@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, MapPin } from 'lucide-react';
+import { X, MapPin, Plus, Package } from 'lucide-react';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
@@ -14,11 +14,9 @@ export default function CollectionModal({ isOpen, onClose, booking, routeMetrics
 
     useEffect(() => {
         if (isOpen && booking) {
-            // Initialize with booking vegetable if available
             if (booking.vegetable_type) {
                 setItems([{ vegetable: booking.vegetable_type, weight: '' }]);
             }
-            // Get current location
             getCurrentLocation();
         }
     }, [isOpen, booking]);
@@ -46,16 +44,10 @@ export default function CollectionModal({ isOpen, onClose, booking, routeMetrics
         }
     };
 
-    const handleAddItem = () => {
-        setItems([...items, { vegetable: '', weight: '' }]);
-    };
-
+    const handleAddItem = () => setItems([...items, { vegetable: '', weight: '' }]);
     const handleRemoveItem = (index) => {
-        if (items.length > 1) {
-            setItems(items.filter((_, i) => i !== index));
-        }
+        if (items.length > 1) setItems(items.filter((_, i) => i !== index));
     };
-
     const handleItemChange = (index, field, value) => {
         const newItems = [...items];
         newItems[index][field] = value;
@@ -66,19 +58,16 @@ export default function CollectionModal({ isOpen, onClose, booking, routeMetrics
         e.preventDefault();
         setError('');
 
-        // Validation
         if (items.some(item => !item.vegetable || !item.weight)) {
             setError('Please fill in all vegetable and weight fields');
             return;
         }
-
         if (!location) {
             setError('GPS location is required. Please allow location access.');
             return;
         }
 
         setLoading(true);
-
         try {
             await api.post('/buyer/collect', {
                 booking_id: booking.id,
@@ -89,8 +78,6 @@ export default function CollectionModal({ isOpen, onClose, booking, routeMetrics
                 location,
                 route_metrics: routeMetrics
             });
-
-            // Reset form
             setItems([{ vegetable: '', weight: '' }]);
             setLocation(null);
             onSuccess();
@@ -104,117 +91,104 @@ export default function CollectionModal({ isOpen, onClose, booking, routeMetrics
     if (!booking) return null;
 
     return (
-        <Modal
-            isOpen={isOpen}
-            onClose={onClose}
-            title="Record Collection"
-            size="md"
-            closeOnBackdrop={false}
-        >
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <Modal isOpen={isOpen} onClose={onClose} title="Record Collection" size="md">
+            <div className="bg-emerald-50 p-4 -mx-6 -mt-2 mb-6 border-b border-emerald-100">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <p className="text-sm font-bold text-emerald-900">{booking.farmer.name}</p>
+                        <p className="text-xs text-emerald-700">{booking.farmer.phone}</p>
+                    </div>
+                    <div className="bg-white px-2 py-1 rounded-lg border border-emerald-100 shadow-sm">
+                        <p className="text-xs font-bold text-gray-500">BOOKING ID</p>
+                        <p className="text-sm font-mono font-bold text-gray-900">#{booking.id}</p>
+                    </div>
+                </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
                 {error && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-sm text-red-600">{error}</p>
+                    <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600 font-medium">
+                        {error}
                     </div>
                 )}
 
-                {/* Farmer Info */}
-                <div className="bg-gray-50 p-3 rounded-lg">
-                    <p className="text-sm font-medium text-gray-900">Farmer: {booking.farmer.name}</p>
-                    <p className="text-sm text-gray-600">Phone: {booking.farmer.phone}</p>
-                </div>
-
-                {/* GPS Location Status */}
-                <div className="flex items-center gap-2 text-sm">
-                    <MapPin className={`w-4 h-4 ${location ? 'text-green-600' : 'text-gray-400'}`} />
-                    {gettingLocation ? (
-                        <span className="text-gray-600">Getting location...</span>
-                    ) : location ? (
-                        <span className="text-green-600">
-                            Location captured: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
-                        </span>
-                    ) : (
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Collection Items</label>
                         <button
                             type="button"
-                            onClick={getCurrentLocation}
-                            className="text-primary-600 hover:underline"
+                            onClick={handleAddItem}
+                            className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
                         >
-                            Get GPS Location
+                            <Plus className="w-3 h-3" /> Add Item
                         </button>
-                    )}
-                </div>
+                    </div>
 
-                {/* Collection Items */}
-                <div className="space-y-3">
-                    <label className="block text-sm font-medium text-gray-700">
-                        Collection Items *
-                    </label>
                     {items.map((item, index) => (
-                        <div key={index} className="flex gap-2">
-                            <Input
-                                type="text"
-                                placeholder="Vegetable name"
-                                value={item.vegetable}
-                                onChange={(e) => handleItemChange(index, 'vegetable', e.target.value)}
-                                className="flex-1"
-                                required
-                            />
-                            <Input
-                                type="number"
-                                step="0.1"
-                                placeholder="Weight (KG)"
-                                value={item.weight}
-                                onChange={(e) => handleItemChange(index, 'weight', e.target.value)}
-                                className="w-32"
-                                required
-                            />
+                        <div key={index} className="flex gap-3 items-start animate-fadeIn">
+                            <div className="flex-1">
+                                <Input
+                                    type="text"
+                                    placeholder="Item name"
+                                    value={item.vegetable}
+                                    onChange={(e) => handleItemChange(index, 'vegetable', e.target.value)}
+                                    className="bg-gray-50 border-gray-200"
+                                    containerClassName="m-0"
+                                />
+                            </div>
+                            <div className="w-28">
+                                <Input
+                                    type="number"
+                                    step="0.1"
+                                    placeholder="KG"
+                                    value={item.weight}
+                                    onChange={(e) => handleItemChange(index, 'weight', e.target.value)}
+                                    className="bg-gray-50 border-gray-200"
+                                    containerClassName="m-0"
+                                />
+                            </div>
                             {items.length > 1 && (
                                 <button
                                     type="button"
                                     onClick={() => handleRemoveItem(index)}
-                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                                    className="p-3 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors mt-0.5"
                                 >
                                     <X className="w-5 h-5" />
                                 </button>
                             )}
                         </div>
                     ))}
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleAddItem}
-                        size="sm"
-                    >
-                        + Add Another Item
-                    </Button>
                 </div>
 
-                {/* Total Weight */}
-                <div className="bg-primary-50 p-3 rounded-lg">
-                    <p className="text-sm font-medium text-primary-900">
-                        Total Weight: {items.reduce((sum, item) => sum + (parseFloat(item.weight) || 0), 0).toFixed(2)} KG
-                    </p>
+                <div className="bg-gray-900 rounded-xl p-4 flex justify-between items-center text-white shadow-lg">
+                    <span className="text-sm font-medium text-gray-300">Total Measured Weight</span>
+                    <span className="text-2xl font-bold">{items.reduce((sum, item) => sum + (parseFloat(item.weight) || 0), 0).toFixed(2)} <span className="text-sm font-normal text-gray-400">KG</span></span>
                 </div>
 
-                {/* Submit Buttons */}
-                <div className="flex gap-3 pt-4">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={onClose}
-                        className="flex-1"
-                        disabled={loading}
-                    >
+                <div className="flex items-center gap-2 text-sm justify-center bg-gray-50 py-2 rounded-lg border border-gray-200">
+                    <MapPin className={`w-4 h-4 ${location ? 'text-green-500 animate-bounce' : 'text-gray-400'}`} />
+                    {gettingLocation ? (
+                        <span className="text-gray-500 italic">Triangulating GPS...</span>
+                    ) : location ? (
+                        <span className="text-green-700 font-bold">Location Verified</span>
+                    ) : (
+                        <button type="button" onClick={getCurrentLocation} className="text-blue-600 font-bold hover:underline">
+                            Retry GPS
+                        </button>
+                    )}
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                    <Button type="button" variant="outline" onClick={onClose} className="flex-1 rounded-xl" disabled={loading}>
                         Cancel
                     </Button>
                     <Button
                         type="submit"
-                        variant="primary"
                         loading={loading}
                         disabled={!location || gettingLocation}
-                        className="flex-1"
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-lg shadow-emerald-200"
                     >
-                        Record Collection
+                        Confirm Collection
                     </Button>
                 </div>
             </form>

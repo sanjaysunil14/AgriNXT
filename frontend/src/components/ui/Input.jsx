@@ -19,15 +19,15 @@ const Input = forwardRef(({
     return (
         <div className={containerClassName}>
             {label && (
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 ml-1">
                     {label}
                 </label>
             )}
 
-            <div className="relative">
+            <div className="relative group">
                 {Icon && iconPosition === 'left' && (
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Icon className={`h-5 w-5 ${hasError ? 'text-red-400' : 'text-gray-400'}`} />
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <Icon className={`h-5 w-5 transition-colors duration-200 ${hasError ? 'text-red-400' : 'text-gray-400 group-hover:text-emerald-500'}`} />
                     </div>
                 )}
 
@@ -35,15 +35,17 @@ const Input = forwardRef(({
                     ref={ref}
                     type={inputType}
                     className={`
-            block w-full rounded-lg border transition-colors
-            ${Icon && iconPosition === 'left' ? 'pl-10' : 'pl-3'}
-            ${isPasswordField ? 'pr-10' : Icon && iconPosition === 'right' ? 'pr-10' : 'pr-3'}
-            py-2.5
+            block w-full rounded-xl border transition-all duration-200
+            ${Icon && iconPosition === 'left' ? 'pl-11' : 'pl-4'}
+            ${isPasswordField ? 'pr-11' : Icon && iconPosition === 'right' ? 'pr-11' : 'pr-4'}
+            py-3 bg-white
+            text-gray-900 font-medium placeholder-gray-400
             ${hasError
-                            ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                            : 'border-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
+                            ? 'border-red-300 focus:ring-4 focus:ring-red-100 focus:border-red-500'
+                            : 'border-gray-200 hover:border-emerald-300 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500'
                         }
             disabled:bg-gray-50 disabled:cursor-not-allowed
+            shadow-sm
             ${className}
           `}
                     {...props}
@@ -53,26 +55,29 @@ const Input = forwardRef(({
                     <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-primary-600 transition-colors"
+                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center cursor-pointer transition-colors"
                         tabIndex={-1}
                     >
                         {showPassword ? (
-                            <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                            <EyeOff className="h-5 w-5 text-gray-400 hover:text-emerald-600" />
                         ) : (
-                            <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                            <Eye className="h-5 w-5 text-gray-400 hover:text-emerald-600" />
                         )}
                     </button>
                 )}
 
                 {Icon && iconPosition === 'right' && !isPasswordField && (
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                        <Icon className={`h-5 w-5 ${hasError ? 'text-red-400' : 'text-gray-400'}`} />
+                    <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
+                        <Icon className={`h-5 w-5 transition-colors duration-200 ${hasError ? 'text-red-400' : 'text-gray-400 group-hover:text-emerald-500'}`} />
                     </div>
                 )}
             </div>
 
             {error && (
-                <p className="mt-1.5 text-sm text-red-600">{error}</p>
+                <p className="mt-2 text-sm text-red-600 flex items-center gap-1 animate-fadeIn">
+                    <span className="w-1 h-1 bg-red-600 rounded-full"></span>
+                    {error}
+                </p>
             )}
         </div>
     );
@@ -81,4 +86,3 @@ const Input = forwardRef(({
 Input.displayName = 'Input';
 
 export default Input;
-

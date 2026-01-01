@@ -512,3 +512,133 @@ export const getTodaysRoute = async (req, res) => {
         });
     }
 };
+
+// Get vegetable list (default + approved custom)
+export const getVegetableList = async (req, res) => {
+    try {
+        const { DEFAULT_VEGETABLES } = await import('../utils/vegetableConfig.js');
+        
+        // Get approved custom vegetables
+        const approvedVegetables = await prisma.vegetableRequest.findMany({
+            where: { status: 'APPROVED' },
+            select: { vegetable_name: true },
+            distinct: ['vegetable_name']
+        });
+
+        const customVegetables = approvedVegetables.map(v => v.vegetable_name);
+        const allVegetables = [...DEFAULT_VEGETABLES, ...customVegetables].sort();
+
+        res.json({
+            success: true,
+            data: { vegetables: allVegetables }
+        });
+    } catch (error) {
+        console.error('Error getting vegetables:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get vegetable list'
+        });
+    }
+};
+
+// Request new vegetable
+export const requestNewVegetable = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const { vegetable_name } = req.body;
+        const { DEFAULT_VEGETABLES } = await import('../utils/vegetableConfig.js');
+
+        if (!vegetable_name || vegetable_name.trim() === '') {
+            return res.status(400).json({
+                success: false,
+                message: 'Vegetable name is required'
+            });
+        }
+
+        const trimmedName = vegetable_name.trim();
+
+        // Check if already exists in default list
+        if (DEFAULT_VEGETABLES.includes(trimmedName)) {
+            return res.status(400).json({
+                success: false,
+                message: 'This vegetable is already available'
+            });
+        }
+
+        // Check if already approved
+        const existingApproved = await prisma.vegetableRequest.findFirst({
+            where: {
+                vegetable_name: trimmedName,
+                status: 'APPROVED'
+            }
+        });
+
+        if (existingApproved) {
+            return res.status(400).json({
+                success: false,
+                message: 'This vegetable is already available'
+            });
+        }
+
+        // Check if already pending
+        const existingPending = await prisma.vegetableRequest.findFirst({
+            where: {
+                vegetable_name: trimmedName,
+                requested_by: userId,
+                status: 'PENDING'
+            }
+        });
+
+        if (existingPending) {
+            return res.status(400).json({
+                success: false,
+                message: 'You have already requested this vegetable. Please wait for admin approval.'
+            });
+        }
+
+        // Create request
+        const request = await prisma.vegetableRequest.create({
+            data: {
+                vegetable_name: trimmedName,
+                requested_by: userId,
+                status: 'PENDING'
+            }
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Vegetable request submitted. Admin will review it shortly.',
+            data: { request }
+        });
+    } catch (error) {
+        console.error('Error requesting vegetable:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to submit vegetable request'
+        });
+    }
+};
+
+// Get my vegetable requests
+export const getMyVegetableRequests = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+
+        const requests = await prisma.vegetableRequest.findMany({
+            where: { requested_by: userId },
+            orderBy: { created_at: 'desc' }
+        });
+
+        res.json({
+            success: true,
+            data: { requests }
+        });
+    } catch (error) {
+        console.error('Error getting requests:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get vegetable requests'
+        });
+    }
+};
+

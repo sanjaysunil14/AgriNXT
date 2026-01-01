@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { LogIn, Phone, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Phone, Lock, Loader2, Eye, EyeOff, Sprout, ArrowRight } from 'lucide-react';
 import api from '../utils/api';
 
 export default function Login() {
@@ -18,14 +18,14 @@ export default function Login() {
             ...formData,
             [e.target.name]: e.target.value
         });
-        setError(''); // Clear error when user types
+        setError('');
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
 
-        // Validation
+        // Validation Logic
         if (!formData.phone_number || !formData.password) {
             setError('Please fill in all fields');
             return;
@@ -44,10 +44,10 @@ export default function Login() {
             if (response.data.success) {
                 const accessToken = response.data.data.accessToken;
 
-                // Store access token in sessionStorage
+                // Store access token
                 sessionStorage.setItem('accessToken', accessToken);
 
-                // Decode JWT to get user role (JWT format: header.payload.signature)
+                // Decode JWT to get user role
                 const payload = JSON.parse(atob(accessToken.split('.')[1]));
                 const userRole = payload.role;
 
@@ -68,124 +68,117 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-100 flex items-center justify-center p-4">
-            <div className="w-full max-w-md">
-                {/* Logo/Header */}
+        <div className="min-h-screen bg-slate-900 relative overflow-hidden flex items-center justify-center p-4">
+            {/* Background Decorations */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/20 rounded-full blur-[100px] -translate-y-1/2"></div>
+                <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-[100px] translate-y-1/2"></div>
+            </div>
+
+            <div className="w-full max-w-md relative z-10">
+                {/* Brand Header */}
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4 shadow-lg">
-                        <LogIn className="w-8 h-8 text-white" />
+                    <div className="flex items-center justify-center gap-3 mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                            <Sprout className="w-7 h-7 text-white" />
+                        </div>
+                        <h1 className="text-3xl font-bold text-white tracking-tight">AgriNXT</h1>
                     </div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                        Farmer-to-Buyer
-                    </h1>
-                    <p className="text-gray-600">
-                        Procurement Management System
-                    </p>
+                    <p className="text-slate-400 text-sm">Next Generation Agricultural Management</p>
                 </div>
 
                 {/* Login Card */}
-                <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-                    <h2 className="text-2xl font-semibold text-gray-900 mb-6">
-                        Sign In
-                    </h2>
+                <div className="bg-white rounded-3xl shadow-2xl p-8 border border-white/10 backdrop-blur-xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-bl-full -mr-8 -mt-8 opacity-50 pointer-events-none"></div>
+
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6 relative">Welcome Back</h2>
 
                     {error && (
-                        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                            <p className="text-sm text-red-600">{error}</p>
+                        <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl flex items-start gap-3 animate-fadeIn">
+                            <div className="w-1.5 h-1.5 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
+                            <p className="text-sm text-red-600 font-medium">{error}</p>
                         </div>
                     )}
 
                     <form onSubmit={handleSubmit} className="space-y-5">
-                        {/* Phone Number */}
-                        <div>
-                            <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700 mb-2">
+                        {/* Phone Number Input */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">
                                 Phone Number
                             </label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Phone className="h-5 w-5 text-gray-400" />
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <Phone className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
                                 </div>
                                 <input
                                     type="tel"
-                                    id="phone_number"
                                     name="phone_number"
                                     value={formData.phone_number}
                                     onChange={handleChange}
                                     placeholder="9999999999"
                                     maxLength="10"
-                                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                                    className="block w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 font-medium focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none"
                                     disabled={loading}
                                 />
                             </div>
                         </div>
 
-                        {/* Password */}
-                        <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                        {/* Password Input */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">
                                 Password
                             </label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Lock className="h-5 w-5 text-gray-400" />
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
                                 </div>
                                 <input
                                     type={showPassword ? 'text' : 'password'}
-                                    id="password"
                                     name="password"
                                     value={formData.password}
                                     onChange={handleChange}
                                     placeholder="Enter your password"
-                                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                                    className="block w-full pl-11 pr-12 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 font-medium focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none"
                                     disabled={loading}
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-primary-600 transition-colors"
-                                    tabIndex={-1}
+                                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-emerald-600 transition-colors cursor-pointer"
                                 >
-                                    {showPassword ? (
-                                        <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                                    ) : (
-                                        <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                                    )}
+                                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                                 </button>
                             </div>
                         </div>
 
-                        {/* Submit Button */}
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary-600/30"
+                            className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
                         >
                             {loading ? (
-                                <>
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                    Signing in...
-                                </>
+                                <Loader2 className="w-5 h-5 animate-spin" />
                             ) : (
                                 <>
-                                    <LogIn className="w-5 h-5" />
-                                    Sign In
+                                    <span>Sign In</span>
+                                    <ArrowRight className="w-5 h-5" />
                                 </>
                             )}
                         </button>
                     </form>
 
-                    {/* Signup Link */}
-                    <div className="mt-6 pt-6 border-t border-gray-200 text-center">
-                        <p className="text-sm text-gray-600">
-                            Don't have an account?{' '}
-                            <Link to="/signup" className="text-primary-600 hover:text-primary-700 font-semibold">
-                                Sign Up
+                    <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+                        <p className="text-gray-500 text-sm">
+                            New to AgriNXT?{' '}
+                            <Link
+                                to="/signup"
+                                className="font-bold text-emerald-600 hover:text-emerald-700 hover:underline transition-all"
+                            >
+                                Create an account
                             </Link>
                         </p>
                     </div>
-
                 </div>
-
-
             </div>
         </div>
     );

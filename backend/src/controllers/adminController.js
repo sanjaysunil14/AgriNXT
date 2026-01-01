@@ -761,3 +761,89 @@ export const getZoneComparison = async (req, res) => {
         });
     }
 };
+
+// Get vegetable requests
+export const getVegetableRequests = async (req, res) => {
+    try {
+        const { status = 'PENDING' } = req.query;
+
+        const requests = await prisma.vegetableRequest.findMany({
+            where: status !== 'ALL' ? { status } : {},
+            include: {
+                farmer: {
+                    select: {
+                        id: true,
+                        full_name: true,
+                        phone_number: true
+                    }
+                }
+            },
+            orderBy: { created_at: 'desc' }
+        });
+
+        res.json({
+            success: true,
+            data: { requests }
+        });
+    } catch (error) {
+        console.error('Error getting vegetable requests:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get vegetable requests'
+        });
+    }
+};
+
+// Approve/Reject vegetable request
+export const updateVegetableRequest = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, admin_notes } = req.body;
+        const adminId = req.user.userId;
+
+        if (!['APPROVED', 'REJECTED'].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status'
+            });
+        }
+
+        const request = await prisma.vegetableRequest.update({
+            where: { id: parseInt(id) },
+            data: {
+                status,
+                admin_notes: admin_notes || null
+            },
+            include: {
+                farmer: {
+                    select: {
+                        full_name: true
+                    }
+                }
+            }
+        });
+
+        // Log audit action
+        await logAuditAction(
+            adminId,
+            'ADMIN',
+            status === 'APPROVED' ? 'APPROVE_VEGETABLE' : 'REJECT_VEGETABLE',
+            request.requested_by,
+            `${status === 'APPROVED' ? 'Approved' : 'Rejected'} vegetable request: ${request.vegetable_name}`,
+            req.ip
+        );
+
+        res.json({
+            success: true,
+            message: `Vegetable request ${status.toLowerCase()} successfully`,
+            data: { request }
+        });
+    } catch (error) {
+        console.error('Error updating vegetable request:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update vegetable request'
+        });
+    }
+};
+

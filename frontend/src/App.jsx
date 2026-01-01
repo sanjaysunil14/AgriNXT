@@ -26,6 +26,7 @@ import SetDailyPrices from './pages/admin/SetDailyPrices';
 import InvoiceManagement from './pages/admin/InvoiceManagement';
 import AdminProfitability from './pages/admin/AdminProfitability';
 import PerformanceSummary from './pages/admin/PerformanceSummary';
+import VegetableRequests from './pages/admin/VegetableRequests';
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -67,6 +68,7 @@ function App() {
                         <Route path="invoices" element={<InvoiceManagement />} />
                         <Route path="profitability" element={<AdminProfitability />} />
                         <Route path="performance" element={<PerformanceSummary />} />
+                        <Route path="vegetable-requests" element={<VegetableRequests />} />
                         <Route path="settings" element={<Settings />} />
                     </Route>
 

@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import { FileText, Download, User, DollarSign } from 'lucide-react';
-import Card from '../../components/ui/Card';
+import { FileText, Download, CheckCircle2, Clock } from 'lucide-react';
 import Table from '../../components/ui/Table';
-import Button from '../../components/ui/Button';
 import { useToast } from '../../components/ui/Toast';
 import api from '../../utils/api';
 import { generateInvoicePDF } from '../../utils/invoicePDF';
@@ -43,28 +41,28 @@ export default function BuyerInvoices() {
 
     const columns = [
         {
-            header: 'Invoice #',
+            header: 'Invoice ID',
             render: (inv) => (
-                <span className="font-mono text-sm font-medium">{inv.invoice_number}</span>
-            )
-        },
-        {
-            header: 'Date',
-            render: (inv) => new Date(inv.date).toLocaleDateString('en-IN')
-        },
-        {
-            header: 'Farmer',
-            render: (inv) => (
-                <div>
-                    <p className="font-medium">{inv.farmer?.full_name || '-'}</p>
-                    <p className="text-sm text-gray-500">{inv.farmer?.phone_number || ''}</p>
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gray-100 rounded-lg text-gray-600">
+                        <FileText className="w-4 h-4" />
+                    </div>
+                    <span className="font-mono text-sm font-bold text-gray-900">{inv.invoice_number}</span>
                 </div>
             )
         },
         {
+            header: 'Date',
+            render: (inv) => <span className="text-gray-600 font-medium">{new Date(inv.date).toLocaleDateString('en-IN')}</span>
+        },
+        {
+            header: 'Farmer',
+            render: (inv) => <span className="font-bold text-gray-800">{inv.farmer?.full_name || '-'}</span>
+        },
+        {
             header: 'Amount',
             render: (inv) => (
-                <span className="font-semibold text-gray-900">
+                <span className="font-bold text-gray-900 bg-gray-50 px-2 py-1 rounded-md border border-gray-200">
                     ₹{inv.grand_total?.toFixed(2) || '0.00'}
                 </span>
             )
@@ -72,114 +70,60 @@ export default function BuyerInvoices() {
         {
             header: 'Status',
             render: (inv) => (
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${inv.status === 'PAID'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-yellow-100 text-yellow-800'
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${inv.status === 'PAID'
+                    ? 'bg-green-50 text-green-700 border-green-200'
+                    : 'bg-yellow-50 text-yellow-700 border-yellow-200'
                     }`}>
+                    {inv.status === 'PAID' ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
                     {inv.status}
                 </span>
             )
         },
         {
-            header: 'Actions',
+            header: 'Export',
             render: (inv) => (
-                <Button
-                    size="sm"
-                    variant="secondary"
-                    icon={Download}
+                <button
                     onClick={() => handleDownloadPDF(inv)}
+                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                    title="Download PDF"
                 >
-                    Download PDF
-                </Button>
+                    <Download className="w-5 h-5" />
+                </button>
             )
         }
     ];
 
-    const totalAmount = filteredInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
-    const paidAmount = filteredInvoices
-        .filter(inv => inv.status === 'PAID')
-        .reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
-    const pendingAmount = filteredInvoices
-        .filter(inv => inv.status === 'PENDING')
-        .reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
-
     return (
-        <div className="p-6 space-y-6">
-            {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900">Invoices</h1>
-                <p className="text-gray-600">View and download generated invoices</p>
-            </div>
-
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-600">Total Invoices</p>
-                            <h3 className="text-2xl font-bold text-gray-900 mt-2">
-                                {filteredInvoices.length}
-                            </h3>
-                        </div>
-                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <FileText className="w-6 h-6 text-blue-600" />
-                        </div>
-                    </div>
-                </Card>
-
-                <Card>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-600">Paid Amount</p>
-                            <h3 className="text-2xl font-bold text-green-600 mt-2">
-                                ₹{paidAmount.toFixed(2)}
-                            </h3>
-                        </div>
-                        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                            <DollarSign className="w-6 h-6 text-green-600" />
-                        </div>
-                    </div>
-                </Card>
-
-                <Card>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-600">Pending Amount</p>
-                            <h3 className="text-2xl font-bold text-yellow-600 mt-2">
-                                ₹{pendingAmount.toFixed(2)}
-                            </h3>
-                        </div>
-                        <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                            <User className="w-6 h-6 text-yellow-600" />
-                        </div>
-                    </div>
-                </Card>
-            </div>
-
-            {/* Filter Tabs */}
-            <Card>
-                <div className="flex gap-2 mb-4">
+        <div className="p-8 space-y-8 bg-gray-50/50 min-h-screen">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900">Invoice History</h1>
+                    <p className="text-gray-500">Record of all generated purchase invoices</p>
+                </div>
+                <div className="flex gap-2 p-1 bg-white border border-gray-200 rounded-xl shadow-sm">
                     {['ALL', 'PAID', 'PENDING'].map((status) => (
                         <button
                             key={status}
                             onClick={() => setFilter(status)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === status
-                                    ? 'bg-primary-600 text-white'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${filter === status
+                                ? 'bg-gray-900 text-white shadow-md'
+                                : 'text-gray-500 hover:bg-gray-50'
                                 }`}
                         >
                             {status}
                         </button>
                     ))}
                 </div>
+            </div>
 
+            <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden">
                 <Table
                     columns={columns}
                     data={filteredInvoices}
                     loading={loading}
-                    emptyMessage="No invoices found"
+                    emptyMessage="No invoices found matching criteria"
                 />
-            </Card>
+            </div>
         </div>
     );
 }

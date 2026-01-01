@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Users, UserPlus, Activity, TrendingUp } from 'lucide-react';
-import Card from '../../components/ui/Card';
+import { Users, UserPlus, Activity, TrendingUp, ArrowUpRight, BarChart3, PieChart } from 'lucide-react';
+import Card from '../../components/ui/Card'; // Assuming you update Card or use div
 import Spinner from '../../components/ui/Spinner';
 import api from '../../utils/api';
 
@@ -25,8 +25,13 @@ export default function Dashboard() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <Spinner size="lg" />
+            <div className="flex items-center justify-center h-[calc(100vh-100px)]">
+                <div className="relative">
+                    <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-500 rounded-full animate-spin"></div>
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-emerald-500">
+                        <Activity className="w-6 h-6" />
+                    </div>
+                </div>
             </div>
         );
     }
@@ -36,7 +41,9 @@ export default function Dashboard() {
             title: 'Total Users',
             value: stats?.totalUsers || 0,
             icon: Users,
-            color: 'bg-blue-500',
+            gradient: 'from-blue-500 to-indigo-600',
+            iconColor: 'text-blue-50',
+            bg: 'bg-blue-50',
             change: '+12%'
         },
         {
@@ -44,31 +51,42 @@ export default function Dashboard() {
             value: stats?.newSignupsThisWeek || 0,
             subtitle: 'This Week',
             icon: UserPlus,
-            color: 'bg-green-500',
+            gradient: 'from-emerald-500 to-teal-600',
+            iconColor: 'text-emerald-50',
+            bg: 'bg-emerald-50',
             change: '+23%'
         },
         {
             title: 'Active Users',
             value: stats?.activeUsers || 0,
             icon: Activity,
-            color: 'bg-purple-500',
+            gradient: 'from-violet-500 to-purple-600',
+            iconColor: 'text-violet-50',
+            bg: 'bg-violet-50',
             change: '+5%'
         },
         {
             title: 'System Status',
             value: 'Healthy',
             icon: TrendingUp,
-            color: 'bg-orange-500',
+            gradient: 'from-orange-400 to-pink-500',
+            iconColor: 'text-orange-50',
+            bg: 'bg-orange-50',
             isText: true
         }
     ];
 
     return (
-        <div className="p-6 space-y-6 bg-gray-50">
-            {/* Header */}
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-gray-600 mt-1">Welcome to the admin panel</p>
+        <div className="p-8 space-y-8 bg-gray-50/50 min-h-screen">
+            {/* Hero Header */}
+            <div className="relative overflow-hidden bg-gradient-to-r from-emerald-600 to-teal-800 rounded-3xl p-8 shadow-xl">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+                <div className="absolute bottom-0 left-0 w-40 h-40 bg-emerald-400/20 rounded-full -ml-10 -mb-10 blur-xl"></div>
+
+                <div className="relative z-10">
+                    <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
+                    <p className="text-emerald-100 text-lg">Welcome back to AgriNXT. Here's what's happening today.</p>
+                </div>
             </div>
 
             {/* Stat Cards */}
@@ -76,61 +94,84 @@ export default function Dashboard() {
                 {statCards.map((stat, index) => (
                     <div
                         key={index}
-                        className="bg-white rounded-xl p-5 border-l-4 shadow-sm hover:shadow-md transition-shadow"
-                        style={{ borderLeftColor: stat.color.replace('bg-', '#').replace('blue-500', '#3B82F6').replace('green-500', '#10B981').replace('purple-500', '#A855F7').replace('orange-500', '#F97316') }}
+                        className="group relative bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden"
                     >
-                        <div className="flex items-start justify-between mb-3">
-                            <div className="flex-1">
-                                <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+                        <div className={`absolute top-0 right-0 w-24 h-24 ${stat.bg} rounded-bl-full -mr-4 -mt-4 opacity-50 group-hover:scale-110 transition-transform duration-500`}></div>
+
+                        <div className="relative flex flex-col justify-between h-full">
+                            <div className="flex items-start justify-between mb-4">
+                                <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.gradient} shadow-lg`}>
+                                    <stat.icon className={`w-6 h-6 ${stat.iconColor}`} />
+                                </div>
+                                {stat.change && (
+                                    <div className="flex items-center gap-1 bg-green-50 px-2 py-1 rounded-lg border border-green-100">
+                                        <ArrowUpRight className="w-3 h-3 text-green-600" />
+                                        <span className="text-xs font-bold text-green-700">{stat.change}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">
                                     {stat.title}
                                 </p>
-                                <p className={`text-3xl font-bold ${stat.isText ? 'text-green-600' : 'text-gray-900'}`}>
+                                <p className={`text-3xl font-bold tracking-tight ${stat.isText ? 'text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600' : 'text-gray-900'}`}>
                                     {stat.value}
                                 </p>
                                 {stat.subtitle && (
-                                    <p className="text-xs text-gray-500 mt-1">{stat.subtitle}</p>
+                                    <p className="text-xs text-gray-400 mt-1 font-medium">{stat.subtitle}</p>
                                 )}
                             </div>
-                            <div className={`${stat.color} p-3 rounded-lg shadow-md`}>
-                                <stat.icon className="w-6 h-6 text-white" />
-                            </div>
                         </div>
-                        {stat.change && (
-                            <div className="pt-3 border-t border-gray-100">
-                                <span className="text-sm text-green-600 font-semibold">{stat.change}</span>
-                                <span className="text-sm text-gray-500"> from last week</span>
-                            </div>
-                        )}
                     </div>
                 ))}
             </div>
 
-            {/* User Distribution */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-5">User Distribution by Role</h3>
-                <div className="space-y-4">
-                    {stats?.usersByRole && Object.entries(stats.usersByRole).map(([role, count]) => (
-                        <div key={role} className="flex items-center justify-between">
-                            <span className="text-gray-700 font-semibold capitalize">{role}</span>
-                            <div className="flex items-center gap-3">
-                                <div className="w-48 bg-gray-200 rounded-full h-2.5">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* User Distribution */}
+                <div className="lg:col-span-1 bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 bg-emerald-100 rounded-lg">
+                            <PieChart className="w-5 h-5 text-emerald-600" />
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900">User Roles</h3>
+                    </div>
+
+                    <div className="space-y-6">
+                        {stats?.usersByRole && Object.entries(stats.usersByRole).map(([role, count]) => (
+                            <div key={role} className="group">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-gray-600 font-semibold capitalize text-sm">{role.toLowerCase()}</span>
+                                    <span className="text-gray-900 font-bold bg-gray-50 px-2 py-0.5 rounded-md text-sm">{count}</span>
+                                </div>
+                                <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
                                     <div
-                                        className="bg-gradient-to-r from-green-500 to-green-600 h-2.5 rounded-full transition-all duration-500"
+                                        className="bg-gradient-to-r from-emerald-400 to-teal-500 h-2.5 rounded-full transition-all duration-1000 group-hover:scale-x-105 origin-left"
                                         style={{ width: `${(count / stats.totalUsers) * 100}%` }}
                                     />
                                 </div>
-                                <span className="text-gray-900 font-bold w-12 text-right">{count}</span>
                             </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
-            </div>
 
-            {/* Placeholder Chart */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">User Growth</h3>
-                <div className="h-64 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border-2 border-dashed border-gray-300">
-                    <p className="text-gray-500">Chart placeholder - User growth over time</p>
+                {/* Placeholder Chart */}
+                <div className="lg:col-span-2 bg-white rounded-3xl shadow-lg border border-gray-100 p-6 flex flex-col">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                            <BarChart3 className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900">User Growth Analytics</h3>
+                    </div>
+
+                    <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50/30 rounded-2xl border-2 border-dashed border-gray-200 relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                        <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                            <TrendingUp className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <p className="text-gray-500 font-medium z-10">Growth chart visualization</p>
+                        <p className="text-gray-400 text-sm z-10 mt-1">Data collection in progress</p>
+                    </div>
                 </div>
             </div>
         </div>

@@ -11,7 +11,9 @@ import {
     getAllInvoices,
     downloadInvoicePDF,
     getPerformanceSummary,
-    getZoneComparison
+    getZoneComparison,
+    getVegetableRequests,
+    updateVegetableRequest
 } from '../controllers/adminController.js';
 import {
     getProfitSummary,
@@ -58,5 +60,9 @@ router.get('/system-config', getConfig);
 // AI Performance Analytics
 router.get('/performance-summary', getPerformanceSummary);
 router.get('/zone-comparison', getZoneComparison);
+
+// Vegetable Requests
+router.get('/vegetable-requests', getVegetableRequests);
+router.put('/vegetable-requests/:id', updateVegetableRequest);
 
 export default router;

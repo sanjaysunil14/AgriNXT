@@ -247,7 +247,7 @@ export default function TrackBuyerModal({ isOpen, onClose, bookingId }) {
                                                 <div className="p-2 bg-blue-100 rounded-lg">
                                                     <MapPin className="w-5 h-5 text-blue-600" />
                                                 </div>
-                                                <p className="text-xs font-bold text-blue-600 uppercase tracking-wider">Total Stops</p>
+                                                <p className="text-xs font-bold text-blue-600 uppercase tracking-wider">Collections Before You</p>
                                             </div>
                                         </div>
                                         <p className="text-3xl font-black text-gray-900 mb-1">

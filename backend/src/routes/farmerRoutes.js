@@ -9,7 +9,10 @@ import {
     getHistory,
     updatePaymentDetails,
     getProfile,
-    getTodaysRoute
+    getTodaysRoute,
+    getVegetableList,
+    requestNewVegetable,
+    getMyVegetableRequests
 } from '../controllers/farmerController.js';
 import { getFarmerInvoices } from '../controllers/invoiceController.js';
 
@@ -36,5 +39,10 @@ router.get('/invoices', getFarmerInvoices);
 // Profile
 router.get('/profile', getProfile);
 router.put('/profile', updatePaymentDetails);
+
+// Vegetables
+router.get('/vegetables', getVegetableList);
+router.post('/vegetables/request', requestNewVegetable);
+router.get('/vegetables/my-requests', getMyVegetableRequests);
 
 export default router;

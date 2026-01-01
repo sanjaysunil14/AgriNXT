@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Download, Calendar, DollarSign } from 'lucide-react';
-import Card from '../../components/ui/Card';
+import { FileText, Download, Calendar, DollarSign, CheckCircle2 } from 'lucide-react';
 import Table from '../../components/ui/Table';
 import Button from '../../components/ui/Button';
 import { useToast } from '../../components/ui/Toast';
@@ -45,7 +44,12 @@ export default function FarmerInvoices() {
         {
             header: 'Invoice #',
             render: (inv) => (
-                <span className="font-mono text-sm font-medium">{inv.invoice_number}</span>
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                        <FileText className="w-4 h-4" />
+                    </div>
+                    <span className="font-mono text-sm font-bold text-gray-900">{inv.invoice_number}</span>
+                </div>
             )
         },
         {
@@ -54,12 +58,12 @@ export default function FarmerInvoices() {
         },
         {
             header: 'Buyer',
-            render: (inv) => inv.buyer?.business_name || inv.buyer?.full_name || '-'
+            render: (inv) => <span className="font-medium text-gray-700">{inv.buyer?.business_name || inv.buyer?.full_name || '-'}</span>
         },
         {
             header: 'Amount',
             render: (inv) => (
-                <span className="font-semibold text-gray-900">
+                <span className="font-bold text-gray-900 bg-gray-50 px-2 py-1 rounded-md">
                     ₹{inv.grand_total?.toFixed(2) || '0.00'}
                 </span>
             )
@@ -67,9 +71,9 @@ export default function FarmerInvoices() {
         {
             header: 'Status',
             render: (inv) => (
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${inv.status === 'PAID'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-yellow-100 text-yellow-800'
+                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${inv.status === 'PAID'
+                    ? 'bg-green-50 text-green-700 border-green-200'
+                    : 'bg-yellow-50 text-yellow-700 border-yellow-200'
                     }`}>
                     {inv.status}
                 </span>
@@ -78,19 +82,17 @@ export default function FarmerInvoices() {
         {
             header: 'Actions',
             render: (inv) => (
-                <Button
-                    size="sm"
-                    variant="secondary"
-                    icon={Download}
+                <button
                     onClick={() => handleDownloadPDF(inv)}
+                    className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                    title="Download PDF"
                 >
-                    Download PDF
-                </Button>
+                    <Download className="w-5 h-5" />
+                </button>
             )
         }
     ];
 
-    const totalAmount = filteredInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
     const paidAmount = filteredInvoices
         .filter(inv => inv.status === 'PAID')
         .reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
@@ -99,82 +101,72 @@ export default function FarmerInvoices() {
         .reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="p-8 space-y-8 bg-gray-50/50 min-h-screen">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-gray-900">Invoices</h1>
-                <p className="text-gray-600">View and download your invoices</p>
+                <h1 className="text-3xl font-bold text-gray-900">Invoices</h1>
+                <p className="text-gray-500">Financial records and payments</p>
             </div>
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-600">Total Invoices</p>
-                            <h3 className="text-2xl font-bold text-gray-900 mt-2">
-                                {filteredInvoices.length}
-                            </h3>
-                        </div>
-                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <FileText className="w-6 h-6 text-blue-600" />
-                        </div>
+                <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wide">Total Invoices</p>
+                        <h3 className="text-3xl font-bold text-gray-900 mt-1">{filteredInvoices.length}</h3>
                     </div>
-                </Card>
+                    <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center text-gray-500">
+                        <FileText className="w-6 h-6" />
+                    </div>
+                </div>
 
-                <Card>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-600">Paid Amount</p>
-                            <h3 className="text-2xl font-bold text-green-600 mt-2">
-                                ₹{paidAmount.toFixed(2)}
-                            </h3>
-                        </div>
-                        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                            <DollarSign className="w-6 h-6 text-green-600" />
-                        </div>
+                <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wide">Paid Amount</p>
+                        <h3 className="text-3xl font-bold text-green-600 mt-1">₹{paidAmount.toFixed(2)}</h3>
                     </div>
-                </Card>
+                    <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center text-green-600">
+                        <CheckCircle2 className="w-6 h-6" />
+                    </div>
+                </div>
 
-                <Card>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-600">Pending Amount</p>
-                            <h3 className="text-2xl font-bold text-yellow-600 mt-2">
-                                ₹{pendingAmount.toFixed(2)}
-                            </h3>
-                        </div>
-                        <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                            <Calendar className="w-6 h-6 text-yellow-600" />
-                        </div>
+                <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wide">Pending</p>
+                        <h3 className="text-3xl font-bold text-amber-500 mt-1">₹{pendingAmount.toFixed(2)}</h3>
                     </div>
-                </Card>
+                    <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500">
+                        <Calendar className="w-6 h-6" />
+                    </div>
+                </div>
             </div>
 
-            {/* Filter Tabs */}
-            <Card>
-                <div className="flex gap-2 mb-4">
-                    {['ALL', 'PAID', 'PENDING'].map((status) => (
-                        <button
-                            key={status}
-                            onClick={() => setFilter(status)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === status
-                                    ? 'bg-primary-600 text-white'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
-                        >
-                            {status}
-                        </button>
-                    ))}
+            {/* Filter Tabs & Table */}
+            <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 bg-gray-50/50">
+                    <div className="flex gap-2 p-1 bg-gray-200/50 rounded-xl w-fit">
+                        {['ALL', 'PAID', 'PENDING'].map((status) => (
+                            <button
+                                key={status}
+                                onClick={() => setFilter(status)}
+                                className={`px-6 py-2 rounded-lg text-xs font-bold transition-all duration-300 ${filter === status
+                                    ? 'bg-white text-emerald-600 shadow-sm transform scale-105'
+                                    : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                            >
+                                {status}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 <Table
                     columns={columns}
                     data={filteredInvoices}
                     loading={loading}
-                    emptyMessage="No invoices found"
+                    emptyMessage="No invoices found matching your filter"
                 />
-            </Card>
+            </div>
         </div>
     );
 }

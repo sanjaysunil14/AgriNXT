@@ -66,6 +66,12 @@ enum Zone {
   WEST
 }
 
+enum VegetableStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id            Int             @id @default(autoincrement())
   full_name     String
@@ -107,6 +113,7 @@ model User {
   farmer_payments   Payment[]        @relation("FarmerPayments")
   audit_logs        AuditLog[]       @relation("UserActions")
   audit_targets     AuditLog[]       @relation("TargetUser")
+  vegetable_requests VegetableRequest[] @relation("VegetableRequests")
 
   @@map("users")
 }
@@ -303,3 +310,19 @@ model SellingPrice {
   @@unique([date, vegetable_name])
   @@map("selling_prices")
 }
+
+model VegetableRequest {
+  id              Int              @id @default(autoincrement())
+  vegetable_name  String
+  requested_by    Int
+  status          VegetableStatus  @default(PENDING)
+  admin_notes     String?
+  created_at      DateTime         @default(now())
+  updated_at      DateTime         @updatedAt
+
+  // Relations
+  farmer User @relation("VegetableRequests", fields: [requested_by], references: [id], onDelete: Cascade)
+
+  @@map("vegetable_requests")
+}
+

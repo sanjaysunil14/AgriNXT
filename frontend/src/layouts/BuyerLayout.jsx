@@ -10,10 +10,10 @@ export default function BuyerLayout() {
         <div className="min-h-screen bg-gray-50 flex">
             <BuyerSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
                 <BuyerTopBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
 
-                <main className="flex-1 overflow-y-auto">
+                <main className="flex-1 overflow-y-auto custom-scrollbar">
                     <Outlet />
                 </main>
             </div>

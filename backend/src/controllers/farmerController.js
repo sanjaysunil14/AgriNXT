@@ -235,6 +235,31 @@ export const cancelBooking = async (req, res) => {
             });
         }
 
+        // Check departure time window (2 hours before departure)
+        const departureHour = parseInt(process.env.DEPARTURE_TIME_HOUR || '12');
+        const bookingDate = new Date(booking.date);
+        const departureTime = new Date(bookingDate);
+        departureTime.setHours(departureHour, 0, 0, 0);
+
+        // Calculate cutoff time (2 hours before departure)
+        const cutoffTime = new Date(departureTime);
+        cutoffTime.setHours(departureTime.getHours() - 2);
+
+        const now = new Date();
+
+        // Only check time window if booking is for today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const bookingDateOnly = new Date(bookingDate);
+        bookingDateOnly.setHours(0, 0, 0, 0);
+
+        if (bookingDateOnly.getTime() === today.getTime() && now >= cutoffTime) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot cancel booking within 2 hours of departure time (${departureHour}:00). Cancellation deadline was ${cutoffTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}.`
+            });
+        }
+
         // Cancel booking
         const cancelled = await prisma.booking.update({
             where: { id: parseInt(id) },
@@ -275,7 +300,7 @@ export const getHistory = async (req, res) => {
 
         const farmerId = user.farmer_profile.id;
 
-        // Get completed/cancelled bookings
+        // Get completed/cancelled bookings with collection chit data
         const history = await prisma.booking.findMany({
             where: {
                 farmer_id: farmerId,
@@ -283,14 +308,65 @@ export const getHistory = async (req, res) => {
                     in: ['COMPLETED', 'CANCELLED']
                 }
             },
+            include: {
+                route_stops: {
+                    include: {
+                        collection_chit: {
+                            include: {
+                                collection_items: true
+                            }
+                        }
+                    }
+                }
+            },
             orderBy: {
                 updated_at: 'desc'
             }
         });
 
+        // Transform the data to include actual collected weights
+        const transformedHistory = history.map(booking => {
+            const routeStop = booking.route_stops[0]; // Get first route stop
+            const collectionChit = routeStop?.collection_chit;
+
+            // If there's a collection chit, use its data
+            if (collectionChit && collectionChit.collection_items.length > 0) {
+                // Get total weight and vegetable summary from collection items
+                const totalWeight = collectionChit.total_weight;
+                const vegetables = collectionChit.collection_items
+                    .map(item => `${item.vegetable_name} (${item.weight.toFixed(2)} kg)`)
+                    .join(', ');
+
+                return {
+                    id: booking.id,
+                    date: booking.date,
+                    vegetable_type: booking.vegetable_type,
+                    vegetables_summary: vegetables,
+                    quantity_kg: totalWeight, // Use actual collected weight
+                    estimated_weight: booking.estimated_weight,
+                    status: booking.status,
+                    created_at: booking.created_at,
+                    updated_at: booking.updated_at
+                };
+            }
+
+            // If no collection chit (cancelled bookings), return original booking data
+            return {
+                id: booking.id,
+                date: booking.date,
+                vegetable_type: booking.vegetable_type,
+                vegetables_summary: booking.vegetables_summary,
+                quantity_kg: booking.quantity_kg,
+                estimated_weight: booking.estimated_weight,
+                status: booking.status,
+                created_at: booking.created_at,
+                updated_at: booking.updated_at
+            };
+        });
+
         res.json({
             success: true,
-            data: { history }
+            data: { history: transformedHistory }
         });
     } catch (error) {
         console.error('Error getting history:', error);
@@ -517,7 +593,7 @@ export const getTodaysRoute = async (req, res) => {
 export const getVegetableList = async (req, res) => {
     try {
         const { DEFAULT_VEGETABLES } = await import('../utils/vegetableConfig.js');
-        
+
         // Get approved custom vegetables
         const approvedVegetables = await prisma.vegetableRequest.findMany({
             where: { status: 'APPROVED' },

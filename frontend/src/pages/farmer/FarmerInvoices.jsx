@@ -61,12 +61,35 @@ export default function FarmerInvoices() {
             render: (inv) => <span className="font-medium text-gray-700">{inv.buyer?.business_name || inv.buyer?.full_name || '-'}</span>
         },
         {
-            header: 'Amount',
+            header: 'Gross Amount',
             render: (inv) => (
-                <span className="font-bold text-gray-900 bg-gray-50 px-2 py-1 rounded-md">
+                <span className="font-semibold text-gray-700">
                     ₹{inv.grand_total?.toFixed(2) || '0.00'}
                 </span>
             )
+        },
+        {
+            header: 'Commission (1%)',
+            render: (inv) => {
+                const commission = (inv.grand_total || 0) * 0.01;
+                return (
+                    <span className="text-red-600 font-medium">
+                        - ₹{commission.toFixed(2)}
+                    </span>
+                );
+            }
+        },
+        {
+            header: 'Net Payable',
+            render: (inv) => {
+                const commission = (inv.grand_total || 0) * 0.01;
+                const netPayable = (inv.grand_total || 0) - commission;
+                return (
+                    <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
+                        ₹{netPayable.toFixed(2)}
+                    </span>
+                );
+            }
         },
         {
             header: 'Status',
@@ -93,12 +116,21 @@ export default function FarmerInvoices() {
         }
     ];
 
+    // Calculate net amounts after 1% commission
     const paidAmount = filteredInvoices
         .filter(inv => inv.status === 'PAID')
-        .reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
+        .reduce((sum, inv) => {
+            const commission = (inv.grand_total || 0) * 0.01;
+            return sum + ((inv.grand_total || 0) - commission);
+        }, 0);
     const pendingAmount = filteredInvoices
         .filter(inv => inv.status === 'PENDING')
-        .reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
+        .reduce((sum, inv) => {
+            const commission = (inv.grand_total || 0) * 0.01;
+            return sum + ((inv.grand_total || 0) - commission);
+        }, 0);
+    const totalCommission = filteredInvoices
+        .reduce((sum, inv) => sum + ((inv.grand_total || 0) * 0.01), 0);
 
     return (
         <div className="p-8 space-y-8 bg-gray-50/50 min-h-screen">
@@ -109,7 +141,7 @@ export default function FarmerInvoices() {
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-100 flex items-center justify-between">
                     <div>
                         <p className="text-sm font-bold text-gray-500 uppercase tracking-wide">Total Invoices</p>
@@ -122,8 +154,9 @@ export default function FarmerInvoices() {
 
                 <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-100 flex items-center justify-between">
                     <div>
-                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wide">Paid Amount</p>
+                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wide">Paid (Net)</p>
                         <h3 className="text-3xl font-bold text-green-600 mt-1">₹{paidAmount.toFixed(2)}</h3>
+                        <p className="text-xs text-gray-400 mt-1">After commission</p>
                     </div>
                     <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center text-green-600">
                         <CheckCircle2 className="w-6 h-6" />
@@ -132,11 +165,23 @@ export default function FarmerInvoices() {
 
                 <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-100 flex items-center justify-between">
                     <div>
-                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wide">Pending</p>
+                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wide">Pending (Net)</p>
                         <h3 className="text-3xl font-bold text-amber-500 mt-1">₹{pendingAmount.toFixed(2)}</h3>
+                        <p className="text-xs text-gray-400 mt-1">After commission</p>
                     </div>
                     <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500">
                         <Calendar className="w-6 h-6" />
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-bold text-gray-500 uppercase tracking-wide">Commission</p>
+                        <h3 className="text-3xl font-bold text-red-600 mt-1">₹{totalCommission.toFixed(2)}</h3>
+                        <p className="text-xs text-gray-400 mt-1">Platform fee (1%)</p>
+                    </div>
+                    <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-600">
+                        <DollarSign className="w-6 h-6" />
                     </div>
                 </div>
             </div>

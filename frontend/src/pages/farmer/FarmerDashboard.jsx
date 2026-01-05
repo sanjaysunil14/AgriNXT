@@ -16,6 +16,8 @@ export default function FarmerDashboard() {
     const [trackModalOpen, setTrackModalOpen] = useState(false);
     const [selectedBookingId, setSelectedBookingId] = useState(null);
     const [profile, setProfile] = useState(null);
+    const [cancelModalOpen, setCancelModalOpen] = useState(false);
+    const [bookingToCancel, setBookingToCancel] = useState(null);
     const { addToast } = useToast();
 
     useEffect(() => {
@@ -48,15 +50,24 @@ export default function FarmerDashboard() {
         return response.data;
     };
 
-    const handleCancelBooking = async (bookingId) => {
-        if (!confirm('Are you sure you want to cancel this booking?')) return;
+    const handleCancelBooking = (bookingId) => {
+        setBookingToCancel(bookingId);
+        setCancelModalOpen(true);
+    };
+
+    const confirmCancelBooking = async () => {
+        if (!bookingToCancel) return;
 
         try {
-            await api.put(`/farmer/bookings/${bookingId}/cancel`);
+            await api.put(`/farmer/bookings/${bookingToCancel}/cancel`);
             addToast('Booking cancelled', 'warning');
+            setCancelModalOpen(false);
+            setBookingToCancel(null);
             fetchData();
         } catch (error) {
             addToast(error.response?.data?.message || 'Failed to cancel booking', 'error');
+            setCancelModalOpen(false);
+            setBookingToCancel(null);
         }
     };
 
@@ -71,6 +82,80 @@ export default function FarmerDashboard() {
     const handleTrackBuyer = (booking) => {
         setSelectedBookingId(booking.id);
         setTrackModalOpen(true);
+    };
+
+    // Check if track button should be visible (only at/after 12 PM on collection date)
+    const shouldShowTrackButton = (booking) => {
+        // Show for PENDING, OPEN, or ROUTED bookings (assigned to buyer or awaiting assignment)
+        // Note: PENDING bookings can be tracked after 12 PM even if buyer hasn't planned route yet
+        if (!['PENDING', 'OPEN', 'ROUTED'].includes(booking.status)) {
+            return false;
+        }
+
+        const departureHour = 12; // 12:00 PM (noon)
+        const now = new Date();
+
+        // Parse the booking date
+        const bookingDate = new Date(booking.date);
+
+        // Create a date object for today at 00:00:00
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Create a date object for the booking date at 00:00:00
+        const bookingDateOnly = new Date(bookingDate);
+        bookingDateOnly.setHours(0, 0, 0, 0);
+
+        // Create departure time (booking date at 12:00 PM)
+        const departureTime = new Date(bookingDate);
+        departureTime.setHours(departureHour, 0, 0, 0);
+
+        // Show track button only if:
+        // 1. The booking date is today or in the past
+        // 2. Current time is >= 12:00 PM on the booking date
+        // 3. If booking is for today, current time must be >= 12:00 PM
+        // 4. If booking is from a past date, always show (buyer should have departed)
+
+        if (bookingDateOnly.getTime() === today.getTime()) {
+            // Booking is for today - check if current time >= 12:00 PM
+            return now >= departureTime;
+        } else if (bookingDateOnly < today) {
+            // Booking is from a past date - always show
+            return true;
+        } else {
+            // Booking is for a future date - never show
+            return false;
+        }
+    };
+
+    // Check if booking can be cancelled (before 2-hour cutoff)
+    const canCancelBooking = (booking) => {
+        if (booking.status !== 'PENDING') return false;
+
+        const departureHour = 12;
+        const bookingDate = new Date(booking.date);
+        const departureTime = new Date(bookingDate);
+        departureTime.setHours(departureHour, 0, 0, 0);
+
+        // Calculate cutoff time (2 hours before departure)
+        const cutoffTime = new Date(departureTime);
+        cutoffTime.setHours(departureTime.getHours() - 2);
+
+        const now = new Date();
+
+        // Only check time window if booking is for today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const bookingDateOnly = new Date(bookingDate);
+        bookingDateOnly.setHours(0, 0, 0, 0);
+
+        // If booking is for today, check if we're before cutoff
+        if (bookingDateOnly.getTime() === today.getTime()) {
+            return now < cutoffTime;
+        }
+
+        // Future bookings can always be cancelled
+        return bookingDateOnly > today;
     };
 
     const getStatusBadge = (status) => {
@@ -123,7 +208,7 @@ export default function FarmerDashboard() {
             header: 'Actions',
             render: (booking) => (
                 <div className="flex gap-2">
-                    {booking.status === 'PENDING' && (
+                    {canCancelBooking(booking) && (
                         <button
                             onClick={() => handleCancelBooking(booking.id)}
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
@@ -132,13 +217,24 @@ export default function FarmerDashboard() {
                             <X className="w-4 h-4" />
                         </button>
                     )}
-                    <button
-                        onClick={() => handleTrackBuyer(booking)}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-medium text-sm border border-blue-200"
-                    >
-                        <MapPin className="w-4 h-4" />
-                        Track
-                    </button>
+                    {!canCancelBooking(booking) && booking.status === 'PENDING' && (
+                        <button
+                            disabled
+                            className="p-2 text-gray-300 cursor-not-allowed rounded-lg"
+                            title="Cannot cancel within 2 hours of departure (12:00 PM)"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    )}
+                    {shouldShowTrackButton(booking) && (
+                        <button
+                            onClick={() => handleTrackBuyer(booking)}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-medium text-sm border border-blue-200"
+                        >
+                            <MapPin className="w-4 h-4" />
+                            Track
+                        </button>
+                    )}
                 </div>
             )
         }
@@ -273,6 +369,40 @@ export default function FarmerDashboard() {
                 }}
                 bookingId={selectedBookingId}
             />
+
+            {/* Cancel Confirmation Modal */}
+            {cancelModalOpen && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm animate-fadeIn">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-slideUp">
+                        <div className="p-6">
+                            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
+                                <AlertCircle className="w-6 h-6 text-red-600" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 text-center mb-2">Cancel Booking?</h3>
+                            <p className="text-gray-600 text-center mb-6">
+                                Are you sure you want to cancel this booking? This action cannot be undone.
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => {
+                                        setCancelModalOpen(false);
+                                        setBookingToCancel(null);
+                                    }}
+                                    className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-semibold"
+                                >
+                                    No, Keep It
+                                </button>
+                                <button
+                                    onClick={confirmCancelBooking}
+                                    className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-semibold"
+                                >
+                                    Yes, Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

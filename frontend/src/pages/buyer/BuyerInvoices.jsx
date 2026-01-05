@@ -60,12 +60,35 @@ export default function BuyerInvoices() {
             render: (inv) => <span className="font-bold text-gray-800">{inv.farmer?.full_name || '-'}</span>
         },
         {
-            header: 'Amount',
+            header: 'Total Amount',
             render: (inv) => (
-                <span className="font-bold text-gray-900 bg-gray-50 px-2 py-1 rounded-md border border-gray-200">
+                <span className="font-semibold text-gray-700">
                     ₹{inv.grand_total?.toFixed(2) || '0.00'}
                 </span>
             )
+        },
+        {
+            header: 'Commission (1%)',
+            render: (inv) => {
+                const commission = (inv.grand_total || 0) * 0.01;
+                return (
+                    <span className="text-amber-600 font-medium text-sm">
+                        ₹{commission.toFixed(2)}
+                    </span>
+                );
+            }
+        },
+        {
+            header: 'Net to Farmer',
+            render: (inv) => {
+                const commission = (inv.grand_total || 0) * 0.01;
+                const netToFarmer = (inv.grand_total || 0) - commission;
+                return (
+                    <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md text-sm">
+                        ₹{netToFarmer.toFixed(2)}
+                    </span>
+                );
+            }
         },
         {
             header: 'Status',
@@ -113,6 +136,21 @@ export default function BuyerInvoices() {
                             {status}
                         </button>
                     ))}
+                </div>
+            </div>
+
+            {/* Commission Info Banner */}
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-100 rounded-full">
+                        <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p className="text-amber-900 font-bold text-sm">Platform Commission</p>
+                        <p className="text-amber-700 text-xs">A 1% platform fee is deducted from each invoice. You pay the full amount, farmers receive 99%.</p>
+                    </div>
                 </div>
             </div>
 

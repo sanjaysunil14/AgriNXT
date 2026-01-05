@@ -261,15 +261,19 @@ export const deleteUser = async (req, res) => {
 export const getAuditLogs = async (req, res) => {
     try {
         const {
-            page = 1,
+            page,
             limit = 20,
+            offset,
             startDate,
             endDate,
             user,
             action
         } = req.query;
 
-        const skip = (parseInt(page) - 1) * parseInt(limit);
+        // Support both page-based and offset-based pagination
+        const skip = offset !== undefined
+            ? parseInt(offset)
+            : (parseInt(page || 1) - 1) * parseInt(limit);
 
         // Build filter conditions
         const where = {};
@@ -330,13 +334,17 @@ export const getAuditLogs = async (req, res) => {
             prisma.auditLog.count({ where })
         ]);
 
+        // Calculate hasMore for lazy loading
+        const hasMore = (skip + parseInt(limit)) < total;
+
         res.status(200).json({
             success: true,
             data: {
                 logs,
+                hasMore,
                 pagination: {
                     total,
-                    currentPage: parseInt(page),
+                    currentPage: page ? parseInt(page) : Math.floor(skip / parseInt(limit)) + 1,
                     totalPages: Math.ceil(total / parseInt(limit)),
                     from: skip + 1,
                     to: Math.min(skip + parseInt(limit), total)
@@ -564,7 +572,7 @@ export const setDailyPrices = async (req, res) => {
 // Get all invoices (Admin only)
 export const getAllInvoices = async (req, res) => {
     try {
-        const { status, startDate, endDate } = req.query;
+        const { status, startDate, endDate, limit, offset, userType } = req.query;
 
         const where = {};
 
@@ -586,33 +594,52 @@ export const getAllInvoices = async (req, res) => {
             }
         }
 
-        const invoices = await prisma.invoice.findMany({
-            where,
-            include: {
-                buyer: {
-                    select: {
-                        id: true,
-                        full_name: true,
-                        business_name: true
-                    }
+        // Note: userType filter logic can be extended here if needed
+        // Currently, all invoices have both farmer and buyer, so we just accept the parameter
+        // If sorting or specific filtering logic for Farmer vs Buyer views is needed, add it here
+
+        // Pagination parameters
+        const take = limit ? parseInt(limit) : undefined;
+        const skip = offset ? parseInt(offset) : 0;
+
+        const [invoices, totalCount] = await Promise.all([
+            prisma.invoice.findMany({
+                where,
+                include: {
+                    buyer: {
+                        select: {
+                            id: true,
+                            full_name: true,
+                            business_name: true
+                        }
+                    },
+                    farmer: {
+                        select: {
+                            id: true,
+                            full_name: true,
+                            phone_number: true
+                        }
+                    },
+                    payments: true
                 },
-                farmer: {
-                    select: {
-                        id: true,
-                        full_name: true,
-                        phone_number: true
-                    }
+                orderBy: {
+                    date: 'desc'
                 },
-                payments: true
-            },
-            orderBy: {
-                date: 'desc'
-            }
-        });
+                take,
+                skip
+            }),
+            prisma.invoice.count({ where })
+        ]);
+
+        const hasMore = take ? (skip + take) < totalCount : false;
 
         res.json({
             success: true,
-            data: { invoices }
+            data: {
+                invoices,
+                hasMore,
+                total: totalCount
+            }
         });
     } catch (error) {
         console.error('Error getting all invoices:', error);

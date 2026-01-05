@@ -485,90 +485,137 @@ export default function BuyerRouteMap({ hubLocation, farmerBookings, onRouteOpti
                     </div>
                 </div>
 
-                {/* Route Sequence - Horizontal Timeline */}
-                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
-                    <p className="text-xs font-bold text-gray-700 mb-3 uppercase tracking-wide">Route Sequence</p>
-                    <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                {/* Route Sequence - Vertical Timeline */}
+                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                    <p className="text-sm font-bold text-gray-700 mb-6 uppercase tracking-wide border-b pb-2">Route Sequence</p>
+                    <div className="relative pl-2">
+                        {/* Vertical Line */}
+                        <div className="absolute top-2 bottom-8 left-[19px] w-0.5 bg-gray-200"></div>
+
                         {/* Hub Start */}
-                        <div className="flex-shrink-0 flex items-center gap-2 bg-green-50 px-3 py-2.5 rounded-lg border-2 border-green-300 shadow-sm">
-                            <div className="w-7 h-7 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-md">
-                                🏭
+                        <div className="relative flex gap-6 pb-8">
+                            {/* Icon */}
+                            <div className="relative z-10 flex-shrink-0">
+                                <div className={`w-10 h-10 rounded-full border-4 border-white shadow-md flex items-center justify-center text-lg
+                                    ${currentStopIndex > 0 ? 'bg-green-500 text-white' : 'bg-blue-600 text-white animate-pulse'}`}>
+                                    {currentStopIndex > 0 ? '✓' : 'Base'}
+                                </div>
                             </div>
-                            <span className="text-sm font-semibold text-gray-800">Hub</span>
+                            {/* Content */}
+                            <div className="flex-1 pt-1">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="font-bold text-gray-900 text-lg">Warehouse (Hub)</h4>
+                                    <span className={`text-xs font-bold px-2 py-1 rounded-full ${currentStopIndex === 0 ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                                        {currentStopIndex === 0 ? 'Current Location' : 'Departed'}
+                                    </span>
+                                </div>
+                                <p className="text-sm text-gray-500 mt-1">Starting Point</p>
+                            </div>
                         </div>
 
-                        {/* Arrow */}
-                        <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-
                         {/* Farmers */}
-                        {optimizedOrder.map((farmer, index) => (
-                            <div key={farmer.id} className="flex items-center gap-2 flex-shrink-0">
-                                {/* Farmer Card */}
-                                <div className="group relative">
-                                    <div className="flex items-center gap-2 bg-blue-50 px-3 py-2.5 rounded-lg border-2 border-blue-300 cursor-pointer hover:bg-blue-100 transition-all group-hover:shadow-lg overflow-hidden">
-                                        <div className="flex items-center gap-2 flex-shrink-0">
-                                            <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-md">
-                                                {index + 1}
-                                            </div>
-                                            <div className="text-left">
-                                                <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">{farmer.farmerName}</p>
-                                                {farmer.estimatedTimeToReach !== undefined && (
-                                                    <p className="text-xs text-blue-600 font-medium whitespace-nowrap">⏱ {formatDuration(farmer.estimatedTimeToReach)}</p>
-                                                )}
-                                            </div>
+                        {optimizedOrder.map((farmer, index) => {
+                            // Step Index: 1-based index (0 is Hub)
+                            const stepIndex = index + 1;
+
+                            // Determine State: Visited, Current, Upcoming
+                            const isVisited = currentStopIndex > stepIndex;
+                            const isCurrent = currentStopIndex === stepIndex;
+                            const isUpcoming = currentStopIndex < stepIndex;
+
+                            return (
+                                <div key={farmer.id} className="relative flex gap-6 pb-8 group">
+                                    {/* Line Color Update based on progress - Overlays the grey line */}
+                                    {isVisited && (
+                                        <div className="absolute top-[-30px] bottom-8 left-[19px] w-0.5 bg-green-500 z-0"></div>
+                                    )}
+
+                                    {/* Icon */}
+                                    <div className="relative z-10 flex-shrink-0">
+                                        <div className={`w-10 h-10 rounded-full border-4 border-white shadow-md flex items-center justify-center font-bold text-sm transition-all duration-300
+                                            ${isVisited ? 'bg-green-500 text-white' :
+                                                isCurrent ? 'bg-blue-600 text-white scale-110 shadow-blue-200 ring-4 ring-blue-50' :
+                                                    'bg-white border-gray-300 text-gray-400'}`}>
+                                            {isVisited ? '✓' : stepIndex}
+                                        </div>
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className={`flex-1 p-4 rounded-xl border transition-all duration-300
+                                        ${isCurrent ? 'bg-blue-50 border-blue-200 shadow-sm' :
+                                            isVisited ? 'bg-gray-50 border-gray-100' :
+                                                'bg-white border-gray-200 opacity-80'}`}>
+
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                                            <h4 className={`text-lg font-bold ${isCurrent ? 'text-blue-900' : 'text-gray-900'}`}>
+                                                {farmer.farmerName}
+                                            </h4>
+                                            {farmer.estimatedTimeToReach !== undefined && (
+                                                <div className={`flex items-center gap-1 text-sm font-medium ${isCurrent ? 'text-blue-700' : 'text-gray-500'}`}>
+                                                    <span>⏱</span>
+                                                    <span>ETA: {formatDuration(farmer.estimatedTimeToReach)}</span>
+                                                </div>
+                                            )}
                                         </div>
 
-                                        {/* Expanded Details on Hover */}
-                                        <div className="hidden group-hover:flex items-center gap-3 ml-3 pl-3 border-l-2 border-blue-400">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                                             {farmer.farmerPhone && (
-                                                <div className="flex items-center gap-1">
-                                                    <span className="text-sm">📞</span>
-                                                    <a
-                                                        href={`tel:${farmer.farmerPhone}`}
-                                                        className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline whitespace-nowrap"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    >
+                                                <div className="flex items-center gap-2 text-gray-600">
+                                                    <span>📞</span>
+                                                    <a href={`tel:${farmer.farmerPhone}`} className="hover:text-blue-600 underline-offset-2 hover:underline">
                                                         {farmer.farmerPhone}
                                                     </a>
                                                 </div>
                                             )}
-                                            <div className="flex items-center gap-1">
-                                                <span className="text-sm">📍</span>
-                                                <p className="text-xs text-gray-700 whitespace-nowrap">
+                                            <div className="flex items-center gap-2 text-gray-600">
+                                                <span>📍</span>
+                                                <span className="truncate max-w-[200px]" title={farmer.village || `${farmer.lat}, ${farmer.lng}`}>
                                                     {farmer.village || `${farmer.lat.toFixed(4)}, ${farmer.lng.toFixed(4)}`}
-                                                </p>
+                                                </span>
                                             </div>
-                                            <div className="flex items-center gap-1">
-                                                <span className="text-sm">🥬</span>
-                                                <p className="text-xs text-gray-700 whitespace-nowrap">
-                                                    {farmer.vegetableType} - {farmer.estimatedWeight ? `${farmer.estimatedWeight} KG` : 'TBD'}
-                                                </p>
+                                            <div className="flex items-center gap-2 text-gray-600 col-span-1 sm:col-span-2">
+                                                <span>📦</span>
+                                                <span className="font-medium text-gray-800">
+                                                    {farmer.vegetableType}
+                                                </span>
+                                                <span className="text-gray-400">|</span>
+                                                <span>
+                                                    {farmer.estimatedWeight ? `${farmer.estimatedWeight} KG` : 'Quantity TBD'}
+                                                </span>
                                             </div>
                                         </div>
+
+                                        {isCurrent && (
+                                            <div className="mt-3 pt-3 border-t border-blue-200 flex items-center gap-2 text-blue-700 text-sm font-medium animate-pulse">
+                                                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                                                Current Destination
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
+                            );
+                        })}
 
-                                {index < optimizedOrder.length - 1 && (
-                                    <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                    </svg>
-                                )}
+                        {/* Hub Return */}
+                        <div className="relative flex gap-6">
+                            {/* Line Color Update based on progress (Final Leg) */}
+                            {currentStopIndex > optimizedOrder.length && (
+                                <div className="absolute top-[-30px] bottom-4 left-[19px] w-0.5 bg-green-500 z-0"></div>
+                            )}
+
+                            {/* Icon */}
+                            <div className="relative z-10 flex-shrink-0">
+                                <div className={`w-10 h-10 rounded-full border-4 border-white shadow-md flex items-center justify-center text-lg
+                                    ${currentStopIndex > optimizedOrder.length ? 'bg-green-500 text-white' :
+                                        'bg-white border-gray-300 text-gray-400'}`}>
+                                    🏁
+                                </div>
                             </div>
-                        ))}
-
-                        {/* Arrow */}
-                        <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-
-                        {/* Hub End */}
-                        <div className="flex-shrink-0 flex items-center gap-2 bg-green-50 px-3 py-2.5 rounded-lg border-2 border-green-300 shadow-sm">
-                            <div className="w-7 h-7 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-md">
-                                🏭
+                            {/* Content */}
+                            <div className="flex-1 pt-1 opacity-90">
+                                <h4 className="font-bold text-gray-900 text-lg">Return to Warehouse</h4>
+                                <p className="text-sm text-gray-500 mt-1">Route Completion</p>
                             </div>
-                            <span className="text-sm font-semibold text-gray-800">Return</span>
                         </div>
                     </div>
                 </div>

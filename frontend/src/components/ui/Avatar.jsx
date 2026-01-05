@@ -2,7 +2,8 @@ export default function Avatar({
     name,
     src,
     size = 'md',
-    className = ''
+    className = '',
+    variant = 'avataaars' // Default to cartoon faces
 }) {
     const sizes = {
         sm: 'w-8 h-8 text-xs',
@@ -11,8 +12,9 @@ export default function Avatar({
         xl: 'w-16 h-16 text-lg'
     };
 
-    // Generate DiceBear avatar URL
-    const avatarUrl = src || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name || 'User')}`;
+    // Generate DiceBear avatar URL (v9 API)
+    // Styles: avataaars, initials, micah, adventurer, etc.
+    const avatarUrl = src || `https://api.dicebear.com/9.x/${variant}/svg?seed=${encodeURIComponent(name || 'User')}`;
 
     // Get initials as fallback
     const getInitials = (name) => {

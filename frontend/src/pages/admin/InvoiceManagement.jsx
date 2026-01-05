@@ -9,34 +9,63 @@ import { generateInvoicePDF } from '../../utils/invoicePDF';
 export default function InvoiceManagement() {
     const [invoices, setInvoices] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [statusFilter, setStatusFilter] = useState('');
     const [selectedDate, setSelectedDate] = useState('');
+    const [userTypeFilter, setUserTypeFilter] = useState('');
+    const [hasMore, setHasMore] = useState(false);
+    const [offset, setOffset] = useState(0);
+    const LIMIT = 4;
     const { addToast } = useToast();
 
     useEffect(() => {
-        fetchInvoices();
-    }, [statusFilter, selectedDate]);
+        // Reset everything when filters change
+        setOffset(0);
+        setInvoices([]); // Clear current list
+        fetchInvoices(0, false);
+    }, [statusFilter, selectedDate, userTypeFilter]);
 
-    const fetchInvoices = async () => {
-        setLoading(true);
+    const fetchInvoices = async (currentOffset, append = false) => {
+        if (!append) setLoading(true);
+        else setLoadingMore(true);
+
         try {
-            const params = {};
-            if (statusFilter) {
-                params.status = statusFilter;
-            }
+            const params = {
+                limit: LIMIT,
+                offset: currentOffset,
+                userType: userTypeFilter
+            };
+
+            if (statusFilter) params.status = statusFilter;
+
             if (selectedDate) {
-                // Send the same date as both start and end to get invoices for that specific day
                 params.startDate = selectedDate;
                 params.endDate = selectedDate;
             }
 
             const response = await api.get('/admin/invoices', { params });
-            setInvoices(response.data.data.invoices);
+            const newInvoices = response.data.data.invoices;
+
+            if (append) {
+                setInvoices(prev => [...prev, ...newInvoices]);
+            } else {
+                setInvoices(newInvoices);
+            }
+
+            setHasMore(response.data.data.hasMore);
         } catch (error) {
+            console.error('Fetch invoices error:', error);
             addToast('Failed to fetch invoices', 'error');
         } finally {
             setLoading(false);
+            setLoadingMore(false);
         }
+    };
+
+    const handleShowMore = () => {
+        const newOffset = offset + LIMIT;
+        setOffset(newOffset);
+        fetchInvoices(newOffset, true);
     };
 
     const handleDownloadPDF = (invoice) => {
@@ -142,7 +171,23 @@ export default function InvoiceManagement() {
                     <h2 className="text-lg font-bold text-gray-900">Filters</h2>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {/* User Type Filter */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            User Type
+                        </label>
+                        <select
+                            value={userTypeFilter}
+                            onChange={(e) => setUserTypeFilter(e.target.value)}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        >
+                            <option value="">All Users</option>
+                            <option value="FARMER">Farmer</option>
+                            <option value="BUYER">Buyer</option>
+                        </select>
+                    </div>
+
                     {/* Status Filter */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -181,6 +226,7 @@ export default function InvoiceManagement() {
                             onClick={() => {
                                 setStatusFilter('');
                                 setSelectedDate('');
+                                setUserTypeFilter('');
                             }}
                             className="w-full"
                         >
@@ -203,6 +249,27 @@ export default function InvoiceManagement() {
                     loading={loading}
                     emptyMessage="No invoices found"
                 />
+
+                {/* Show More Button */}
+                {hasMore && (
+                    <div className="mt-8 flex justify-center">
+                        <Button
+                            variant="secondary"
+                            onClick={handleShowMore}
+                            disabled={loadingMore}
+                            className="px-8"
+                        >
+                            {loadingMore ? (
+                                <span className="flex items-center gap-2">
+                                    <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
+                                    Loading...
+                                </span>
+                            ) : (
+                                'Show More'
+                            )}
+                        </Button>
+                    </div>
+                )}
             </div>
         </div>
     );

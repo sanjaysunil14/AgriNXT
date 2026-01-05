@@ -7,8 +7,12 @@ import api from '../../utils/api';
 export default function AuditLogs() {
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [pagination, setPagination] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
+    const [offset, setOffset] = useState(0);
+    const [hasMore, setHasMore] = useState(false);
+    const LIMIT = 4;
     const { addToast } = useToast();
 
     // Filter states
@@ -20,15 +24,20 @@ export default function AuditLogs() {
     });
 
     useEffect(() => {
-        fetchLogs();
-    }, [currentPage]);
+        // Reset everything when filters change
+        setOffset(0);
+        setLogs([]);
+        fetchLogs(null, 0, false);
+    }, [filters]); // When filters change, reset and fetch
 
-    const fetchLogs = async (customFilters = null) => {
-        setLoading(true);
+    const fetchLogs = async (customFilters = null, currentOffset = 0, append = false) => {
+        if (!append) setLoading(true);
+        else setLoadingMore(true);
+
         try {
             const params = {
-                page: currentPage,
-                limit: 20,
+                offset: currentOffset,
+                limit: LIMIT,
                 ...(customFilters || filters)
             };
 
@@ -40,18 +49,35 @@ export default function AuditLogs() {
             });
 
             const response = await api.get('/admin/audit-logs', { params });
-            setLogs(response.data.data.logs);
-            setPagination(response.data.data.pagination);
+            const newLogs = response.data.data.logs;
+
+            if (append) {
+                setLogs(prev => [...prev, ...newLogs]);
+            } else {
+                setLogs(newLogs);
+            }
+
+            setHasMore(response.data.data.hasMore);
+            setPagination(response.data.data.pagination); // Keep pagination data just in case
         } catch (error) {
+            console.error('Fetch logs error:', error);
             addToast('Failed to fetch audit logs', 'error');
         } finally {
             setLoading(false);
+            setLoadingMore(false);
         }
     };
 
+    const handleShowMore = () => {
+        const newOffset = offset + LIMIT;
+        setOffset(newOffset);
+        fetchLogs(null, newOffset, true);
+    };
+
     const handleSearch = () => {
-        setCurrentPage(1); // Reset to first page
-        fetchLogs();
+        setOffset(0);
+        setLogs([]);
+        fetchLogs(null, 0, false);
     };
 
     const handleClearFilters = () => {
@@ -62,8 +88,7 @@ export default function AuditLogs() {
             action: 'ALL'
         };
         setFilters(clearedFilters);
-        setCurrentPage(1);
-        fetchLogs(clearedFilters);
+        // useEffect will handle the fetch
     };
 
     const getActionBadge = (action) => {
@@ -253,15 +278,33 @@ export default function AuditLogs() {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+            <div className="bg-white rounded-xl shadow-md overflow-hidden p-6 pb-8">
                 <Table
                     columns={columns}
                     data={logs}
                     loading={loading}
                     emptyMessage="No audit logs found"
-                    pagination={pagination}
-                    onPageChange={setCurrentPage}
                 />
+
+                {/* Show More Button */}
+                {hasMore && (
+                    <div className="mt-8 flex justify-center">
+                        <button
+                            onClick={handleShowMore}
+                            disabled={loadingMore}
+                            className={`px-8 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors ${loadingMore ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        >
+                            {loadingMore ? (
+                                <span className="flex items-center gap-2">
+                                    <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
+                                    Loading...
+                                </span>
+                            ) : (
+                                'Show More'
+                            )}
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

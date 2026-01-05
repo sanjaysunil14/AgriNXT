@@ -13,7 +13,7 @@ import Dashboard from './pages/admin/Dashboard';
 import UserManagement from './pages/admin/UserManagement';
 import UserApprovals from './pages/admin/UserApprovals';
 import AuditLogs from './pages/admin/AuditLogs';
-import Settings from './pages/admin/Settings';
+
 import FarmerDashboard from './pages/farmer/FarmerDashboard';
 import FarmerHistory from './pages/farmer/FarmerHistory';
 import FarmerProfile from './pages/farmer/FarmerProfile';
@@ -69,7 +69,7 @@ function App() {
                         <Route path="profitability" element={<AdminProfitability />} />
                         <Route path="performance" element={<PerformanceSummary />} />
                         <Route path="vegetable-requests" element={<VegetableRequests />} />
-                        <Route path="settings" element={<Settings />} />
+                        
                     </Route>
 
                     {/* Legacy admin dashboard route - redirect to new admin */}

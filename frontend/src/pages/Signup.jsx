@@ -5,6 +5,7 @@ import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import MapPicker from '../components/ui/MapPicker';
 import api from '../utils/api';
+import { TN_DISTRICTS, getZoneFromDistrict, getZoneBadgeColor } from '../utils/districts';
 
 export default function Signup() {
     const navigate = useNavigate();
@@ -15,6 +16,7 @@ export default function Signup() {
         password: '',
         confirmPassword: '',
         role: 'FARMER',
+        district: '',
         // Farmer-specific
         latitude: null,
         longitude: null,
@@ -51,6 +53,10 @@ export default function Signup() {
             setError('Please fill in all required fields');
             return;
         }
+        if (!formData.district) {
+            setError('Please select your district');
+            return;
+        }
         if (formData.phone_number.length !== 10) {
             setError('Phone number must be 10 digits');
             return;
@@ -82,6 +88,7 @@ export default function Signup() {
                 email: formData.email || null,
                 password: formData.password,
                 role: formData.role,
+                district: formData.district,
                 // Add role-specific fields
                 ...(formData.role === 'FARMER' ? {
                     latitude: formData.latitude,
@@ -147,8 +154,8 @@ export default function Signup() {
                                         type="button"
                                         onClick={() => setFormData({ ...formData, role: 'FARMER' })}
                                         className={`group relative p-4 rounded-2xl border-2 transition-all duration-300 flex flex-col items-center gap-3 ${formData.role === 'FARMER'
-                                                ? 'border-emerald-500 bg-emerald-50/50'
-                                                : 'border-gray-100 hover:border-emerald-200 hover:bg-gray-50'
+                                            ? 'border-emerald-500 bg-emerald-50/50'
+                                            : 'border-gray-100 hover:border-emerald-200 hover:bg-gray-50'
                                             }`}
                                         disabled={loading}
                                     >
@@ -169,8 +176,8 @@ export default function Signup() {
                                         type="button"
                                         onClick={() => setFormData({ ...formData, role: 'BUYER' })}
                                         className={`group relative p-4 rounded-2xl border-2 transition-all duration-300 flex flex-col items-center gap-3 ${formData.role === 'BUYER'
-                                                ? 'border-blue-500 bg-blue-50/50'
-                                                : 'border-gray-100 hover:border-blue-200 hover:bg-gray-50'
+                                            ? 'border-blue-500 bg-blue-50/50'
+                                            : 'border-gray-100 hover:border-blue-200 hover:bg-gray-50'
                                             }`}
                                         disabled={loading}
                                     >
@@ -229,6 +236,39 @@ export default function Signup() {
                                     placeholder="john@example.com"
                                     disabled={loading}
                                 />
+
+                                {/* District Dropdown */}
+                                <div className="md:col-span-2 space-y-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">
+                                        District (Tamil Nadu) *
+                                    </label>
+                                    <div className="relative">
+                                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                        <select
+                                            name="district"
+                                            value={formData.district}
+                                            onChange={handleChange}
+                                            disabled={loading}
+                                            className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all bg-white text-gray-900 font-medium"
+                                            required
+                                        >
+                                            <option value="">Select your district</option>
+                                            {TN_DISTRICTS.map(district => (
+                                                <option key={district} value={district}>
+                                                    {district}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    {formData.district && (
+                                        <div className="flex items-center gap-2 mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                            <span className="text-xs font-medium text-gray-600">Assigned Zone:</span>
+                                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${getZoneBadgeColor(getZoneFromDistrict(formData.district))}`}>
+                                                {getZoneFromDistrict(formData.district)}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
 
                                 {formData.role === 'BUYER' && (
                                     <>

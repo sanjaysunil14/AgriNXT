@@ -8,13 +8,37 @@ const prisma = new PrismaClient();
 export const getRoute = async (req, res) => {
     try {
         const userId = req.user.userId;
+
+        // Get buyer's zone
+        const buyer = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { zone: true, full_name: true }
+        });
+
+        if (!buyer) {
+            return res.status(404).json({
+                success: false,
+                message: 'Buyer not found'
+            });
+        }
+
+        if (!buyer.zone) {
+            console.warn(`⚠️ Buyer ${userId} (${buyer.full_name}) has no zone assigned`);
+            return res.status(400).json({
+                success: false,
+                message: 'Your zone is not assigned. Please contact admin.'
+            });
+        }
+
+        console.log(`🔍 Fetching route for buyer ${buyer.full_name} in zone: ${buyer.zone}`);
+
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
 
-        // Get bookings for today with status PENDING or OPEN
+        // Get bookings for today with zone filtering
         const bookings = await prisma.booking.findMany({
             where: {
                 date: {
@@ -23,6 +47,11 @@ export const getRoute = async (req, res) => {
                 },
                 status: {
                     in: ['PENDING', 'OPEN', 'ROUTED']
+                },
+                farmer: {
+                    user: {
+                        zone: buyer.zone  // ✅ Zone filter added
+                    }
                 }
             },
             include: {
@@ -34,7 +63,8 @@ export const getRoute = async (req, res) => {
                                 full_name: true,
                                 phone_number: true,
                                 latitude: true,
-                                longitude: true
+                                longitude: true,
+                                zone: true
                             }
                         }
                     }
@@ -44,6 +74,8 @@ export const getRoute = async (req, res) => {
                 created_at: 'asc'
             }
         });
+
+        console.log(`✅ Found ${bookings.length} bookings in ${buyer.zone} zone`);
 
         // Transform data for frontend
         const routeData = bookings.map(booking => ({
@@ -57,7 +89,8 @@ export const getRoute = async (req, res) => {
                 name: booking.farmer.user.full_name,
                 phone: booking.farmer.user.phone_number,
                 latitude: booking.farmer.user.latitude,
-                longitude: booking.farmer.user.longitude
+                longitude: booking.farmer.user.longitude,
+                zone: booking.farmer.user.zone
             }
         }));
 
@@ -66,7 +99,7 @@ export const getRoute = async (req, res) => {
             data: { bookings: routeData }
         });
     } catch (error) {
-        console.error('Error getting route:', error);
+        console.error('❌ Error getting route:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to get route'
@@ -101,7 +134,14 @@ export const collectProduce = async (req, res) => {
             include: {
                 farmer: {
                     include: {
-                        user: true
+                        user: {
+                            select: {
+                                id: true,
+                                full_name: true,
+                                phone_number: true,
+                                zone: true
+                            }
+                        }
                     }
                 }
             }
@@ -113,6 +153,38 @@ export const collectProduce = async (req, res) => {
                 message: 'Booking not found'
             });
         }
+
+        // Get buyer's zone
+        const buyer = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { zone: true, full_name: true }
+        });
+
+        // ✅ Validate zone matching
+        if (!buyer.zone) {
+            console.warn(` Buyer ${userId} (${buyer.full_name}) has no zone assigned`);
+            return res.status(400).json({
+                message: 'Your zone is not assigned. Please contact admin.'
+            });
+        }
+
+        if (!booking.farmer.user.zone) {
+            console.warn(`⚠️ Farmer ${booking.farmer.user.id} (${booking.farmer.user.full_name}) has no zone assigned`);
+            return res.status(400).json({
+                success: false,
+                message: 'Farmer zone is not assigned. Cannot collect.'
+            });
+        }
+
+        if (buyer.zone !== booking.farmer.user.zone) {
+            console.error(`🚫 Zone mismatch: Buyer ${buyer.full_name} (${buyer.zone}) tried to collect from Farmer ${booking.farmer.user.full_name} (${booking.farmer.user.zone})`);
+            return res.status(403).json({
+                success: false,
+                message: `Cannot collect from farmer in different zone. Your zone: ${buyer.zone}, Farmer zone: ${booking.farmer.user.zone}`
+            });
+        }
+
+        console.log(`✅ Zone validation passed: ${buyer.zone}`);
 
         if (!['PENDING', 'OPEN', 'ROUTED'].includes(booking.status)) {
             return res.status(400).json({
@@ -238,10 +310,25 @@ export const collectProduce = async (req, res) => {
 export const getUnpricedCollections = async (req, res) => {
     try {
         const userId = req.user.userId;
+
+        // Get buyer's zone
+        const buyer = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { zone: true, full_name: true }
+        });
+
+        if (!buyer.zone) {
+            console.warn(`⚠️ Buyer ${userId} (${buyer.full_name}) has no zone assigned`);
+            return res.status(400).json({
+                success: false,
+                message: 'Your zone is not assigned. Please contact admin.'
+            });
+        }
+
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // Get all unpriced collection chits for today
+        // Get all unpriced collection chits for today with zone filter
         const unpricedChits = await prisma.collectionChit.findMany({
             where: {
                 buyer_id: userId,
@@ -249,12 +336,22 @@ export const getUnpricedCollections = async (req, res) => {
                     gte: today,
                     lt: new Date(today.getTime() + 24 * 60 * 60 * 1000)
                 },
-                is_priced: false
+                is_priced: false,
+                farmer: {
+                    zone: buyer.zone  // ✅ Zone filter added
+                }
             },
             include: {
-                collection_items: true
+                collection_items: true,
+                farmer: {
+                    select: {
+                        zone: true
+                    }
+                }
             }
         });
+
+        console.log(`🔍 Found ${unpricedChits.length} unpriced chits in ${buyer.zone} zone`);
 
         // Aggregate vegetables and their total weights
         const vegetableSummary = {};
@@ -770,3 +867,4 @@ export const createPlannedRoute = async (req, res) => {
         });
     }
 };
+

@@ -153,7 +153,7 @@ export default function AdminProfitability() {
                         {/* Selling Price Form */}
                         <form onSubmit={handleUpdateSellingPrice} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                             <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                <DollarSign className="w-4 h-4 text-emerald-500" /> Price Override
+                                <DollarSign className="w-4 h-4 text-emerald-500" /> Set Selling Price
                             </h3>
                             <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
@@ -190,7 +190,7 @@ export default function AdminProfitability() {
                                     className="w-full px-4 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all font-semibold shadow-lg shadow-emerald-200 flex items-center justify-center gap-2"
                                 >
                                     <Save className="w-4 h-4" />
-                                    Save Override
+                                    Save
                                 </button>
                             </div>
                         </form>

@@ -57,8 +57,12 @@ export default function FarmerTopBar({ onMenuClick }) {
                             <p className="text-xs text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full inline-block">FARMER</p>
                         </div>
                         <div className="relative group cursor-pointer">
-                            <div className="ring-2 ring-gray-100 rounded-full p-0.5 transition-all group-hover:ring-emerald-200">
+                            <div className="ring-2 ring-gray-100 rounded-full p-0.5 transition-all group-hover:ring-emerald-200"
+                                onClick={() => navigate('/farmer/profile')}
+                            >
                                 <Avatar seed={user.full_name} size="md" />
+                                
+                                    
                             </div>
                             <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
                         </div>

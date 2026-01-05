@@ -182,9 +182,7 @@ export default function UserApprovals() {
                     <h1 className="text-3xl font-bold text-gray-900">Registration Requests</h1>
                     <p className="text-gray-500 mt-1">Review and verify new account applications</p>
                 </div>
-                <div className="p-3 bg-white shadow-sm border border-gray-100 rounded-2xl">
-                    <ShieldCheck className="w-6 h-6 text-emerald-600" />
-                </div>
+                
             </div>
 
             {/* Content Container */}

@@ -14,7 +14,7 @@ export default function Sidebar({ isOpen, onClose }) {
         { to: '/admin/performance', icon: Sparkles, label: 'AI Performance Summary' },
         { to: '/admin/invoices', icon: FileText, label: 'Invoice Management' },
         { to: '/admin/audit-logs', icon: FileText, label: 'Audit Logs' },
-        { to: '/admin/settings', icon: Settings, label: 'Settings' }
+        
     ];
 
     return (

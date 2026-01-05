@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Users, UserPlus, Activity, TrendingUp, ArrowUpRight, BarChart3, PieChart } from 'lucide-react';
-import Card from '../../components/ui/Card'; // Assuming you update Card or use div
-import Spinner from '../../components/ui/Spinner';
+import { Users, UserPlus, Activity, ArrowUpRight } from 'lucide-react';
 import api from '../../utils/api';
+import TopVegetablesChart from '../../components/charts/TopVegetablesChart';
+import FarmerLeaderboard from '../../components/charts/FarmerLeaderboard';
+import ActivityFeed from '../../components/charts/ActivityFeed';
+import PriceTrendsChart from '../../components/charts/PriceTrendsChart';
 
 export default function Dashboard() {
     const [stats, setStats] = useState(null);
@@ -64,15 +66,6 @@ export default function Dashboard() {
             iconColor: 'text-violet-50',
             bg: 'bg-violet-50',
             change: '+5%'
-        },
-        {
-            title: 'System Status',
-            value: 'Healthy',
-            icon: TrendingUp,
-            gradient: 'from-orange-400 to-pink-500',
-            iconColor: 'text-orange-50',
-            bg: 'bg-orange-50',
-            isText: true
         }
     ];
 
@@ -90,7 +83,7 @@ export default function Dashboard() {
             </div>
 
             {/* Stat Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {statCards.map((stat, index) => (
                     <div
                         key={index}
@@ -127,52 +120,15 @@ export default function Dashboard() {
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* User Distribution */}
-                <div className="lg:col-span-1 bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 bg-emerald-100 rounded-lg">
-                            <PieChart className="w-5 h-5 text-emerald-600" />
-                        </div>
-                        <h3 className="text-lg font-bold text-gray-900">User Roles</h3>
-                    </div>
+            {/* Analytics Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <TopVegetablesChart />
+                <PriceTrendsChart />
+            </div>
 
-                    <div className="space-y-6">
-                        {stats?.usersByRole && Object.entries(stats.usersByRole).map(([role, count]) => (
-                            <div key={role} className="group">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-gray-600 font-semibold capitalize text-sm">{role.toLowerCase()}</span>
-                                    <span className="text-gray-900 font-bold bg-gray-50 px-2 py-0.5 rounded-md text-sm">{count}</span>
-                                </div>
-                                <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                                    <div
-                                        className="bg-gradient-to-r from-emerald-400 to-teal-500 h-2.5 rounded-full transition-all duration-1000 group-hover:scale-x-105 origin-left"
-                                        style={{ width: `${(count / stats.totalUsers) * 100}%` }}
-                                    />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Placeholder Chart */}
-                <div className="lg:col-span-2 bg-white rounded-3xl shadow-lg border border-gray-100 p-6 flex flex-col">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                            <BarChart3 className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <h3 className="text-lg font-bold text-gray-900">User Growth Analytics</h3>
-                    </div>
-
-                    <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50/30 rounded-2xl border-2 border-dashed border-gray-200 relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-                        <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                            <TrendingUp className="w-8 h-8 text-gray-400" />
-                        </div>
-                        <p className="text-gray-500 font-medium z-10">Growth chart visualization</p>
-                        <p className="text-gray-400 text-sm z-10 mt-1">Data collection in progress</p>
-                    </div>
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <FarmerLeaderboard />
+                <ActivityFeed />
             </div>
         </div>
     );

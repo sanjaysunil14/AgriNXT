@@ -7,7 +7,12 @@ export const getFarmerInvoices = async (req, res) => {
     try {
         const userId = req.user.userId;
 
-        const invoices = await prisma.invoice.findMany({
+        // Get pagination parameters from query string
+        const limit = req.query.limit ? parseInt(req.query.limit) : undefined;
+        const offset = req.query.offset ? parseInt(req.query.offset) : 0;
+
+        // Build query options
+        const queryOptions = {
             where: { farmer_id: userId },
             include: {
                 buyer: {
@@ -21,11 +26,31 @@ export const getFarmerInvoices = async (req, res) => {
             orderBy: {
                 date: 'desc'
             }
-        });
+        };
+
+        // Add pagination if limit is specified
+        if (limit !== undefined) {
+            queryOptions.skip = offset;
+            queryOptions.take = limit;
+        }
+
+        const invoices = await prisma.invoice.findMany(queryOptions);
+
+        // Check if there are more invoices (only if pagination is used)
+        let hasMore = false;
+        if (limit !== undefined) {
+            const totalCount = await prisma.invoice.count({
+                where: { farmer_id: userId }
+            });
+            hasMore = (offset + limit) < totalCount;
+        }
 
         res.json({
             success: true,
-            data: { invoices }
+            data: {
+                invoices,
+                hasMore
+            }
         });
     } catch (error) {
         console.error('Error getting farmer invoices:', error);

@@ -12,10 +12,14 @@ import api from '../../utils/api';
 export default function UserManagement() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [pagination, setPagination] = useState(null);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(false);
+    const [offset, setOffset] = useState(0);
+    const [total, setTotal] = useState(0);
+    const [searchInput, setSearchInput] = useState('');
     const [search, setSearch] = useState('');
     const [roleFilter, setRoleFilter] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
+    const LIMIT = 10;
 
     // Modals
     const [editModal, setEditModal] = useState({ isOpen: false, user: null });
@@ -25,25 +29,60 @@ export default function UserManagement() {
     const { addToast } = useToast();
 
     useEffect(() => {
-        fetchUsers();
-    }, [currentPage, search, roleFilter]);
+        // Reset and fetch initial users when filters change
+        fetchUsers(true);
+    }, [search, roleFilter]);
 
-    const fetchUsers = async () => {
-        setLoading(true);
+    const handleSearch = () => {
+        setSearch(searchInput);
+    };
+
+    const handleKeyPress = (e) => {
+        if (e.key === 'Enter') {
+            handleSearch();
+        }
+    };
+
+    const fetchUsers = async (reset = false) => {
+        if (reset) {
+            setLoading(true);
+            setOffset(0);
+        } else {
+            setLoadingMore(true);
+        }
+
         try {
             const params = {
-                page: currentPage,
-                limit: 10,
+                limit: LIMIT,
+                offset: reset ? 0 : offset,
                 search,
                 role: roleFilter
             };
+
             const response = await api.get('/admin/users', { params });
-            setUsers(response.data.data.users);
-            setPagination(response.data.data.pagination);
+            const { users: newUsers, hasMore: more, total: totalCount } = response.data.data;
+
+            if (reset) {
+                setUsers(newUsers);
+                setOffset(LIMIT);
+            } else {
+                setUsers(prev => [...prev, ...newUsers]);
+                setOffset(prev => prev + LIMIT);
+            }
+
+            setHasMore(more);
+            setTotal(totalCount);
         } catch (error) {
             addToast('Failed to fetch users', 'error');
         } finally {
             setLoading(false);
+            setLoadingMore(false);
+        }
+    };
+
+    const loadMore = () => {
+        if (!loadingMore && hasMore) {
+            fetchUsers(false);
         }
     };
 
@@ -51,7 +90,7 @@ export default function UserManagement() {
         try {
             await api.patch(`/admin/users/${user.id}/ban`);
             addToast(`User ${user.is_active ? 'banned' : 'unbanned'} successfully`, 'success');
-            fetchUsers();
+            fetchUsers(true);
         } catch (error) {
             addToast('Failed to update user status', 'error');
         }
@@ -63,7 +102,7 @@ export default function UserManagement() {
             await api.delete(`/admin/users/${deleteModal.user.id}`);
             addToast('User deleted successfully', 'success');
             setDeleteModal({ isOpen: false, user: null });
-            fetchUsers();
+            fetchUsers(true);
         } catch (error) {
             addToast('Failed to delete user', 'error');
         } finally {
@@ -161,25 +200,27 @@ export default function UserManagement() {
 
             {/* Filters */}
             <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-4 items-center">
-                <div className="flex-1 w-full">
+                <div className="flex-1 w-full flex gap-2">
                     <Input
                         icon={Search}
                         placeholder="Search by name or phone..."
-                        value={search}
-                        onChange={(e) => {
-                            setSearch(e.target.value);
-                            setCurrentPage(1);
-                        }}
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
+                        onKeyPress={handleKeyPress}
                         className="bg-gray-50 border-transparent focus:bg-white"
-                        containerClassName="m-0"
+                        containerClassName="m-0 flex-1"
                     />
+                    <button
+                        onClick={handleSearch}
+                        className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-xl hover:from-emerald-600 hover:to-teal-600 shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 whitespace-nowrap"
+                    >
+                        <Search className="w-4 h-4" />
+                        Search
+                    </button>
                 </div>
                 <select
                     value={roleFilter}
-                    onChange={(e) => {
-                        setRoleFilter(e.target.value);
-                        setCurrentPage(1);
-                    }}
+                    onChange={(e) => setRoleFilter(e.target.value)}
                     className="w-full sm:w-48 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 font-medium focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none cursor-pointer hover:bg-white transition-colors"
                 >
                     <option value="">All Roles</option>
@@ -189,6 +230,13 @@ export default function UserManagement() {
                 </select>
             </div>
 
+            {/* Results Summary */}
+            {!loading && (
+                <div className="text-sm text-gray-600">
+                    Showing <span className="font-bold text-gray-900">{users.length}</span> of <span className="font-bold text-gray-900">{total}</span> users
+                </div>
+            )}
+
             {/* Table */}
             <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 overflow-hidden border border-gray-100">
                 <Table
@@ -196,9 +244,30 @@ export default function UserManagement() {
                     data={users}
                     loading={loading}
                     emptyMessage="No users matching your criteria found"
-                    pagination={pagination}
-                    onPageChange={setCurrentPage}
                 />
+
+                {/* Show More Button */}
+                {!loading && hasMore && (
+                    <div className="p-6 border-t border-gray-100 flex justify-center">
+                        <button
+                            onClick={loadMore}
+                            disabled={loadingMore}
+                            className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-xl hover:from-emerald-600 hover:to-teal-600 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {loadingMore ? (
+                                <>
+                                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Loading...
+                                </>
+                            ) : (
+                                'Show More'
+                            )}
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Modals */}
@@ -206,7 +275,7 @@ export default function UserManagement() {
                 isOpen={editModal.isOpen}
                 onClose={() => setEditModal({ isOpen: false, user: null })}
                 user={editModal.user}
-                onSuccess={fetchUsers}
+                onSuccess={() => fetchUsers(true)}
             />
 
             <DeleteUserModal

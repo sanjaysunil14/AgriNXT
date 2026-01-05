@@ -9,8 +9,13 @@ import { generateInvoicePDF } from '../../utils/invoicePDF';
 export default function FarmerInvoices() {
     const [invoices, setInvoices] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [filter, setFilter] = useState('ALL');
+    const [offset, setOffset] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
     const { addToast } = useToast();
+
+    const LIMIT = 4; // Number of invoices to load per request
 
     useEffect(() => {
         fetchInvoices();
@@ -19,12 +24,28 @@ export default function FarmerInvoices() {
     const fetchInvoices = async () => {
         setLoading(true);
         try {
-            const response = await api.get('/farmer/invoices');
+            const response = await api.get(`/farmer/invoices?limit=${LIMIT}&offset=0`);
             setInvoices(response.data.data.invoices);
+            setHasMore(response.data.data.hasMore);
+            setOffset(LIMIT);
         } catch (error) {
             addToast('Failed to fetch invoices', 'error');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadMore = async () => {
+        setLoadingMore(true);
+        try {
+            const response = await api.get(`/farmer/invoices?limit=${LIMIT}&offset=${offset}`);
+            setInvoices(prev => [...prev, ...response.data.data.invoices]);
+            setHasMore(response.data.data.hasMore);
+            setOffset(prev => prev + LIMIT);
+        } catch (error) {
+            addToast('Failed to load more invoices', 'error');
+        } finally {
+            setLoadingMore(false);
         }
     };
 
@@ -44,26 +65,26 @@ export default function FarmerInvoices() {
         {
             header: 'Invoice #',
             render: (inv) => (
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
-                        <FileText className="w-4 h-4" />
+                <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-blue-50 rounded-lg text-blue-600 flex-shrink-0">
+                        <FileText className="w-3.5 h-3.5" />
                     </div>
-                    <span className="font-mono text-sm font-bold text-gray-900">{inv.invoice_number}</span>
+                    <span className="font-mono text-xs font-bold text-gray-900">{inv.invoice_number}</span>
                 </div>
             )
         },
         {
             header: 'Date',
-            render: (inv) => new Date(inv.date).toLocaleDateString('en-IN')
+            render: (inv) => <span className="text-sm whitespace-nowrap">{new Date(inv.date).toLocaleDateString('en-IN')}</span>
         },
         {
             header: 'Buyer',
-            render: (inv) => <span className="font-medium text-gray-700">{inv.buyer?.business_name || inv.buyer?.full_name || '-'}</span>
+            render: (inv) => <span className="font-medium text-gray-700 text-sm">{inv.buyer?.business_name || inv.buyer?.full_name || '-'}</span>
         },
         {
             header: 'Gross Amount',
             render: (inv) => (
-                <span className="font-semibold text-gray-700">
+                <span className="font-semibold text-gray-700 text-sm whitespace-nowrap">
                     ₹{inv.grand_total?.toFixed(2) || '0.00'}
                 </span>
             )
@@ -73,7 +94,7 @@ export default function FarmerInvoices() {
             render: (inv) => {
                 const commission = (inv.grand_total || 0) * 0.01;
                 return (
-                    <span className="text-red-600 font-medium">
+                    <span className="text-red-600 font-medium text-sm whitespace-nowrap">
                         - ₹{commission.toFixed(2)}
                     </span>
                 );
@@ -85,7 +106,7 @@ export default function FarmerInvoices() {
                 const commission = (inv.grand_total || 0) * 0.01;
                 const netPayable = (inv.grand_total || 0) - commission;
                 return (
-                    <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
+                    <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md text-sm whitespace-nowrap">
                         ₹{netPayable.toFixed(2)}
                     </span>
                 );
@@ -94,7 +115,7 @@ export default function FarmerInvoices() {
         {
             header: 'Status',
             render: (inv) => (
-                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${inv.status === 'PAID'
+                <span className={`px-2.5 py-1 rounded-full text-xs font-bold border whitespace-nowrap ${inv.status === 'PAID'
                     ? 'bg-green-50 text-green-700 border-green-200'
                     : 'bg-yellow-50 text-yellow-700 border-yellow-200'
                     }`}>
@@ -110,7 +131,7 @@ export default function FarmerInvoices() {
                     className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
                     title="Download PDF"
                 >
-                    <Download className="w-5 h-5" />
+                    <Download className="w-4 h-4" />
                 </button>
             )
         }
@@ -211,6 +232,29 @@ export default function FarmerInvoices() {
                     loading={loading}
                     emptyMessage="No invoices found matching your filter"
                 />
+
+                {/* Show More Button */}
+                {!loading && hasMore && filter === 'ALL' && (
+                    <div className="p-6 border-t border-gray-100 flex justify-center">
+                        <button
+                            onClick={loadMore}
+                            disabled={loadingMore}
+                            className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                        >
+                            {loadingMore ? (
+                                <span className="flex items-center gap-2">
+                                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Loading...
+                                </span>
+                            ) : (
+                                'Show More'
+                            )}
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

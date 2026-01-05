@@ -27,14 +27,14 @@ export default function Table({
 
     return (
         <div className="w-full">
-            <div className="overflow-x-auto">
+            <div className="overflow-hidden">
                 <table className="w-full">
                     <thead className="bg-gray-50 border-b border-gray-200">
                         <tr>
                             {columns.map((column, index) => (
                                 <th
                                     key={index}
-                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                 >
                                     {column.header}
                                 </th>
@@ -45,7 +45,7 @@ export default function Table({
                         {data.map((row, rowIndex) => (
                             <tr key={rowIndex} className="hover:bg-gray-50 transition-colors">
                                 {columns.map((column, colIndex) => (
-                                    <td key={colIndex} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <td key={colIndex} className="px-4 py-3 text-sm text-gray-900">
                                         {column.render ? column.render(row) : row[column.accessor]}
                                     </td>
                                 ))}

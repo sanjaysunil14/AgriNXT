@@ -23,6 +23,12 @@ import {
     getDailyPrices,
     getConfig
 } from '../controllers/profitabilityController.js';
+import {
+    getTopVegetables,
+    getFarmerLeaderboard,
+    getRecentActivity,
+    getPriceTrends
+} from '../controllers/analyticsController.js';
 import { verifyToken } from '../middleware/authMiddleware.js';
 import { requireRole } from '../middleware/roleMiddleware.js';
 
@@ -64,5 +70,11 @@ router.get('/zone-comparison', getZoneComparison);
 // Vegetable Requests
 router.get('/vegetable-requests', getVegetableRequests);
 router.put('/vegetable-requests/:id', updateVegetableRequest);
+
+// Analytics (Dashboard)
+router.get('/analytics/top-vegetables', getTopVegetables);
+router.get('/analytics/farmer-leaderboard', getFarmerLeaderboard);
+router.get('/analytics/recent-activity', getRecentActivity);
+router.get('/analytics/price-trends', getPriceTrends);
 
 export default router;

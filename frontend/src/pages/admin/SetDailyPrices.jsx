@@ -190,6 +190,7 @@ function ConfirmationModal({ isOpen, onClose, onConfirm, vegetables, prices, loa
 export default function SetDailyPrices() {
     const [vegetables, setVegetables] = useState([]);
     const [prices, setPrices] = useState({});
+    const [priceHistory, setPriceHistory] = useState([]);
     const [loading, setLoading] = useState(false);
     const [generating, setGenerating] = useState(false);
     const [result, setResult] = useState(null);
@@ -208,11 +209,44 @@ export default function SetDailyPrices() {
 
             setVegetables(vegetables);
 
+            // Initialize prices object
             const initialPrices = {};
-            vegetables.forEach(veg => {
-                initialPrices[veg.vegetable] = '';
-            });
+
+            // Try to fetch existing daily prices for today
+            try {
+                const pricesResponse = await api.get('/admin/daily-prices');
+                const existingPrices = pricesResponse.data.data.prices;
+
+                // Store price history for display
+                setPriceHistory(existingPrices);
+
+                console.log('📊 Existing prices fetched:', existingPrices);
+                console.log('🥬 Vegetables needing pricing:', vegetables);
+
+                // Create a map of existing prices
+                const existingPriceMap = {};
+                existingPrices.forEach(price => {
+                    existingPriceMap[price.vegetable_name] = price.price_per_kg.toString();
+                });
+
+                console.log('🗺️ Price map created:', existingPriceMap);
+
+                // Initialize prices with existing values or empty strings
+                vegetables.forEach(veg => {
+                    const existingPrice = existingPriceMap[veg.vegetable] || '';
+                    initialPrices[veg.vegetable] = existingPrice;
+                    console.log(`✅ ${veg.vegetable}: ${existingPrice || '(no existing price)'} `);
+                });
+            } catch (priceError) {
+                console.error('❌ Error fetching existing prices:', priceError);
+                // If price fetch fails, initialize with empty strings
+                vegetables.forEach(veg => {
+                    initialPrices[veg.vegetable] = '';
+                });
+            }
+
             setPrices(initialPrices);
+            console.log('💾 Final prices state set:', initialPrices);
         } catch (error) {
             addToast('Failed to fetch collected vegetables', 'error');
         } finally {
@@ -270,18 +304,7 @@ export default function SetDailyPrices() {
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full -ml-32 -mb-32"></div>
 
                 <div className="relative">
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-4">
-                            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border-2 border-white/30 shadow-lg">
-                                <Leaf className="w-9 h-9 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-bold text-white mb-1 tracking-tight">FreshFlow</h1>
-                                <p className="text-emerald-100 text-sm font-medium">Smart Agricultural Management Platform</p>
-                            </div>
-                        </div>
 
-                    </div>
 
                     <div className="space-y-2">
                         <h2 className="text-4xl font-bold text-white">Daily Price Management</h2>
@@ -289,6 +312,56 @@ export default function SetDailyPrices() {
                     </div>
                 </div>
             </div>
+
+            {/* Today's Price History */}
+            {priceHistory.length > 0 && (
+                <div className="relative overflow-hidden bg-white rounded-3xl shadow-2xl border-2 border-gray-100">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-50 to-transparent rounded-full -mr-32 -mt-32"></div>
+
+                    <div className="relative p-8">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg">
+                                <TrendingUp className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h2 className="text-2xl font-bold text-gray-900">Today's Price History</h2>
+                                <p className="text-gray-500 text-sm">Prices set for {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {priceHistory.map((priceItem, index) => (
+                                <div
+                                    key={priceItem.id}
+                                    className="group relative bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl p-5 hover:border-blue-300 hover:shadow-lg transition-all duration-300"
+                                    style={{ animationDelay: `${index * 30}ms` }}
+                                >
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-100/50 to-transparent rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500"></div>
+
+                                    <div className="relative">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl flex items-center justify-center shadow-md">
+                                                <Leaf className="w-5 h-5 text-white" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <h3 className="font-bold text-lg text-gray-900">{priceItem.vegetable_name}</h3>
+                                                <p className="text-xs text-gray-500">
+                                                    Set at {new Date(priceItem.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-gradient-to-br from-blue-100 to-indigo-100 p-4 rounded-xl border border-blue-200">
+                                            <p className="text-xs text-blue-700 font-semibold mb-1">Price per KG</p>
+                                            <p className="text-2xl font-bold text-blue-900">₹{priceItem.price_per_kg.toFixed(2)}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Pricing Form with Premium Design */}
             <div className="relative overflow-hidden bg-white rounded-3xl shadow-2xl border-2 border-gray-100">

@@ -443,6 +443,7 @@ export const getProfile = async (req, res) => {
                 email: true,
                 latitude: true,
                 longitude: true,
+                district: true,
                 payment_method: true,
                 payment_value: true
             }

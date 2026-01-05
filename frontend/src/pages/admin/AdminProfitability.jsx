@@ -8,6 +8,7 @@ export default function AdminProfitability() {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [config, setConfig] = useState(null);
     const [showSettings, setShowSettings] = useState(false);
+    const [availableVegetables, setAvailableVegetables] = useState([]);
 
     // Form states
     const [deliveryRate, setDeliveryRate] = useState('');
@@ -19,6 +20,7 @@ export default function AdminProfitability() {
     useEffect(() => {
         fetchProfitData();
         fetchConfig();
+        fetchVegetables();
     }, [selectedDate]);
 
     const fetchProfitData = async () => {
@@ -40,6 +42,18 @@ export default function AdminProfitability() {
             setDeliveryRate(response.data.data.config.delivery_rate_per_km);
         } catch (error) {
             console.error('Error fetching config:', error);
+        }
+    };
+
+    const fetchVegetables = async () => {
+        try {
+            const response = await api.get('/admin/daily-prices');
+            const prices = response.data.data.prices || [];
+            // Extract unique vegetable names
+            const uniqueVegetables = [...new Set(prices.map(p => p.vegetable_name))];
+            setAvailableVegetables(uniqueVegetables.sort());
+        } catch (error) {
+            console.error('Error fetching vegetables:', error);
         }
     };
 
@@ -161,14 +175,17 @@ export default function AdminProfitability() {
                                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
                                             Vegetable
                                         </label>
-                                        <input
-                                            type="text"
+                                        <select
                                             value={sellingPriceForm.vegetable_name}
                                             onChange={(e) => setSellingPriceForm({ ...sellingPriceForm, vegetable_name: e.target.value })}
-                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                                            placeholder="Name"
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium text-gray-700"
                                             required
-                                        />
+                                        >
+                                            <option value="">Select vegetable</option>
+                                            {availableVegetables.map((veg, index) => (
+                                                <option key={index} value={veg}>{veg}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">

@@ -110,6 +110,16 @@ export default function FarmerProfile() {
 
                             <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl">
                                 <div className="p-2 bg-white rounded-lg shadow-sm">
+                                    <Building className="w-5 h-5 text-gray-400" />
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-500 font-bold uppercase">District</p>
+                                    <p className="text-gray-900 font-medium">{profile.district || 'Not provided'}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl">
+                                <div className="p-2 bg-white rounded-lg shadow-sm">
                                     <MapPin className="w-5 h-5 text-gray-400" />
                                 </div>
                                 <div>

@@ -49,8 +49,12 @@ export const getDashboardStats = async (req, res) => {
 // Get all users with pagination, search, and filter
 export const getUsers = async (req, res) => {
     try {
-        const { page = 1, limit = 10, search = '', role = '' } = req.query;
-        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const { page, limit = 10, offset, search = '', role = '' } = req.query;
+
+        // Support both page-based and offset-based pagination
+        const skip = offset !== undefined
+            ? parseInt(offset)
+            : (parseInt(page || 1) - 1) * parseInt(limit);
 
         const where = {};
 
@@ -83,13 +87,18 @@ export const getUsers = async (req, res) => {
             prisma.user.count({ where })
         ]);
 
+        // Calculate hasMore for lazy loading
+        const hasMore = (skip + parseInt(limit)) < total;
+
         res.status(200).json({
             success: true,
             data: {
                 users,
+                hasMore,
+                total,
                 pagination: {
                     total,
-                    currentPage: parseInt(page),
+                    currentPage: page ? parseInt(page) : Math.floor(skip / parseInt(limit)) + 1,
                     totalPages: Math.ceil(total / parseInt(limit)),
                     from: skip + 1,
                     to: Math.min(skip + parseInt(limit), total)

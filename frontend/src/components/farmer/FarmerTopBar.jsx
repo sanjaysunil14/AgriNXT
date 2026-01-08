@@ -41,7 +41,7 @@ export default function FarmerTopBar({ onMenuClick }) {
                 {/* Page title visible on desktop */}
                 <div className="hidden lg:block">
                     <h2 className="text-xl font-bold text-gray-800 tracking-tight">
-                        <span className="text-gray-400 font-normal">Welcome back,</span> {user?.full_name?.split(' ')[0]}!
+                        <span className="text-gray-400 font-normal">Welcome back,</span> {user?.full_name}!
                     </h2>
                 </div>
             </div>
@@ -61,8 +61,8 @@ export default function FarmerTopBar({ onMenuClick }) {
                                 onClick={() => navigate('/farmer/profile')}
                             >
                                 <Avatar seed={user.full_name} size="md" />
-                                
-                                    
+
+
                             </div>
                             <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
                         </div>

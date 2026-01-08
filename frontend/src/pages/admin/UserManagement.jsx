@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Search, Edit, Ban, Trash2, Shield, CheckCircle, XCircle, Users } from 'lucide-react';
+import { Search, Ban, Trash2, Shield, CheckCircle, XCircle, Users } from 'lucide-react';
 import Table from '../../components/ui/Table';
 import Input from '../../components/ui/Input';
 import Avatar from '../../components/ui/Avatar';
 import Dropdown, { DropdownItem } from '../../components/ui/Dropdown';
-import EditUserModal from '../../components/admin/EditUserModal';
 import DeleteUserModal from '../../components/admin/DeleteUserModal';
 import { useToast } from '../../components/ui/Toast';
 import api from '../../utils/api';
@@ -22,7 +21,6 @@ export default function UserManagement() {
     const LIMIT = 10;
 
     // Modals
-    const [editModal, setEditModal] = useState({ isOpen: false, user: null });
     const [deleteModal, setDeleteModal] = useState({ isOpen: false, user: null });
     const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -158,12 +156,6 @@ export default function UserManagement() {
             render: (user) => (
                 <Dropdown>
                     <DropdownItem
-                        icon={Edit}
-                        onClick={() => setEditModal({ isOpen: true, user })}
-                    >
-                        Edit Details
-                    </DropdownItem>
-                    <DropdownItem
                         icon={Ban}
                         onClick={() => handleBanToggle(user)}
                         className={user.is_active ? 'text-orange-600' : 'text-green-600'}
@@ -271,13 +263,6 @@ export default function UserManagement() {
             </div>
 
             {/* Modals */}
-            <EditUserModal
-                isOpen={editModal.isOpen}
-                onClose={() => setEditModal({ isOpen: false, user: null })}
-                user={editModal.user}
-                onSuccess={() => fetchUsers(true)}
-            />
-
             <DeleteUserModal
                 isOpen={deleteModal.isOpen}
                 onClose={() => setDeleteModal({ isOpen: false, user: null })}

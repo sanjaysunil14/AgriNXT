@@ -35,12 +35,12 @@ export const register = async (req, res) => {
       });
     }
 
-    if (role === 'BUYER') {
-      return res.status(403).json({
-        success: false,
-        message: 'Buyer registration is currently disabled. The system operates with fixed zone buyers. Please contact admin for access.'
-      });
-    }
+    // if (role === 'BUYER') {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: 'Buyer registration is currently disabled. The system operates with fixed zone buyers. Please contact admin for access.'
+    //   });
+    // }
 
     // Check if user already exists by phone
     const existingUser = await prisma.user.findUnique({

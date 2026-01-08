@@ -220,25 +220,19 @@ export default function SetDailyPrices() {
                 // Store price history for display
                 setPriceHistory(existingPrices);
 
-                console.log('📊 Existing prices fetched:', existingPrices);
-                console.log('🥬 Vegetables needing pricing:', vegetables);
-
                 // Create a map of existing prices
                 const existingPriceMap = {};
                 existingPrices.forEach(price => {
                     existingPriceMap[price.vegetable_name] = price.price_per_kg.toString();
                 });
 
-                console.log('🗺️ Price map created:', existingPriceMap);
-
                 // Initialize prices with existing values or empty strings
                 vegetables.forEach(veg => {
                     const existingPrice = existingPriceMap[veg.vegetable] || '';
                     initialPrices[veg.vegetable] = existingPrice;
-                    console.log(`✅ ${veg.vegetable}: ${existingPrice || '(no existing price)'} `);
                 });
             } catch (priceError) {
-                console.error('❌ Error fetching existing prices:', priceError);
+                console.error('Error fetching existing prices:', priceError);
                 // If price fetch fails, initialize with empty strings
                 vegetables.forEach(veg => {
                     initialPrices[veg.vegetable] = '';
@@ -246,7 +240,6 @@ export default function SetDailyPrices() {
             }
 
             setPrices(initialPrices);
-            console.log('💾 Final prices state set:', initialPrices);
         } catch (error) {
             addToast('Failed to fetch collected vegetables', 'error');
         } finally {

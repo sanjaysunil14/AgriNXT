@@ -4,11 +4,13 @@ import { UserPlus, User, Phone, Mail, MapPin, Lock, Building, Sprout, Tractor, S
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import MapPicker from '../components/ui/MapPicker';
+import { useToast } from '../components/ui/Toast';
 import api from '../utils/api';
 import { TN_DISTRICTS, getZoneFromDistrict, getZoneBadgeColor } from '../utils/districts';
 
 export default function Signup() {
     const navigate = useNavigate();
+    const { addToast } = useToast();
     const [formData, setFormData] = useState({
         full_name: '',
         phone_number: '',
@@ -102,7 +104,7 @@ export default function Signup() {
             const response = await api.post('/auth/register', payload);
 
             if (response.data.success) {
-                alert('Account created successfully! Please wait for admin approval.');
+                addToast('Account created successfully! Please wait for admin approval.', 'success');
                 navigate('/');
             }
         } catch (err) {
@@ -149,11 +151,11 @@ export default function Signup() {
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">
                                     I am a
                                 </label>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="flex justify-center gap-4">
                                     <button
                                         type="button"
                                         onClick={() => setFormData({ ...formData, role: 'FARMER' })}
-                                        className={`group relative p-4 rounded-2xl border-2 transition-all duration-300 flex flex-col items-center gap-3 ${formData.role === 'FARMER'
+                                        className={`group relative p-6 rounded-2xl border-2 transition-all duration-300 flex flex-col items-center gap-3 w-full max-w-sm ${formData.role === 'FARMER'
                                             ? 'border-emerald-500 bg-emerald-50/50'
                                             : 'border-gray-100 hover:border-emerald-200 hover:bg-gray-50'
                                             }`}
@@ -172,7 +174,7 @@ export default function Signup() {
                                         )}
                                     </button>
 
-                                    <button
+                                    {/* <button
                                         type="button"
                                         onClick={() => setFormData({ ...formData, role: 'BUYER' })}
                                         className={`group relative p-4 rounded-2xl border-2 transition-all duration-300 flex flex-col items-center gap-3 ${formData.role === 'BUYER'
@@ -192,7 +194,7 @@ export default function Signup() {
                                         {formData.role === 'BUYER' && (
                                             <div className="absolute top-3 right-3 w-3 h-3 bg-blue-500 rounded-full"></div>
                                         )}
-                                    </button>
+                                    </button> */}
                                 </div>
                             </div>
 

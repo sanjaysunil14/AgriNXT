@@ -127,15 +127,18 @@ export default function BookingModal({ isOpen, onClose, onSuccess }) {
                     </div>
                 )}
 
+
                 <Input
                     label="Collection Date *"
                     type="date"
                     name="collection_date"
                     value={formData.collection_date}
                     onChange={handleChange}
+                    min={new Date().toISOString().split('T')[0]}
                     required
                     className="cursor-pointer"
                 />
+
 
                 <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">

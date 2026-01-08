@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, Truck, Package, Settings, ChevronDown, Save } from 'lucide-react';
 import api from '../../utils/api';
+import { useToast } from '../../components/ui/Toast';
 
 export default function AdminProfitability() {
     const [profitData, setProfitData] = useState(null);
@@ -16,11 +17,11 @@ export default function AdminProfitability() {
         vegetable_name: '',
         selling_price_per_kg: ''
     });
+    const { addToast } = useToast();
 
     useEffect(() => {
         fetchProfitData();
         fetchConfig();
-        fetchVegetables();
     }, [selectedDate]);
 
     const fetchProfitData = async () => {
@@ -45,17 +46,13 @@ export default function AdminProfitability() {
         }
     };
 
-    const fetchVegetables = async () => {
-        try {
-            const response = await api.get('/admin/daily-prices');
-            const prices = response.data.data.prices || [];
-            // Extract unique vegetable names
-            const uniqueVegetables = [...new Set(prices.map(p => p.vegetable_name))];
-            setAvailableVegetables(uniqueVegetables.sort());
-        } catch (error) {
-            console.error('Error fetching vegetables:', error);
+    // Extract vegetables from profitData whenever it changes
+    useEffect(() => {
+        if (profitData?.vegetables) {
+            const vegetableNames = profitData.vegetables.map(v => v.name);
+            setAvailableVegetables(vegetableNames.sort());
         }
-    };
+    }, [profitData]);
 
     const handleUpdateDeliveryRate = async (e) => {
         e.preventDefault();
@@ -63,12 +60,12 @@ export default function AdminProfitability() {
             await api.post('/admin/update-delivery-rate', {
                 delivery_rate_per_km: parseFloat(deliveryRate)
             });
-            alert('Delivery rate updated successfully!');
+            addToast('Delivery rate updated successfully!', 'success');
             fetchConfig();
             fetchProfitData();
         } catch (error) {
             console.error('Error updating delivery rate:', error);
-            alert('Failed to update delivery rate');
+            addToast('Failed to update delivery rate', 'error');
         }
     };
 
@@ -80,12 +77,12 @@ export default function AdminProfitability() {
                 vegetable_name: sellingPriceForm.vegetable_name,
                 selling_price_per_kg: parseFloat(sellingPriceForm.selling_price_per_kg)
             });
-            alert('Selling price updated successfully!');
+            addToast('Selling price updated successfully!', 'success');
             setSellingPriceForm({ vegetable_name: '', selling_price_per_kg: '' });
             fetchProfitData();
         } catch (error) {
             console.error('Error updating selling price:', error);
-            alert('Failed to update selling price');
+            addToast('Failed to update selling price', 'error');
         }
     };
 
@@ -335,6 +332,6 @@ export default function AdminProfitability() {
                     </table>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

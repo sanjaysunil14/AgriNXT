@@ -9,22 +9,62 @@ export default function BuyerInvoices() {
     const [invoices, setInvoices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('ALL');
+    const [offset, setOffset] = useState(0);
+    const [hasMore, setHasMore] = useState(false);
+
+    // Additional filter states
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [farmerName, setFarmerName] = useState('');
+    const [invoiceNumber, setInvoiceNumber] = useState('');
+
+    const LIMIT = 4;
     const { addToast } = useToast();
 
     useEffect(() => {
-        fetchInvoices();
-    }, []);
+        setInvoices([]);
+        setOffset(0);
+        setHasMore(false);
+        fetchInvoices(true);
+    }, [filter, startDate, endDate, farmerName, invoiceNumber]);
 
-    const fetchInvoices = async () => {
+    const fetchInvoices = async (isInitial = false) => {
         setLoading(true);
         try {
-            const response = await api.get('/buyer/invoices');
-            setInvoices(response.data.data.invoices);
+            const currentOffset = isInitial ? 0 : offset;
+            const statusParam = filter !== 'ALL' ? `&status=${filter}` : '';
+            const dateParams = startDate ? `&startDate=${startDate}` : '';
+            const endDateParam = endDate ? `&endDate=${endDate}` : '';
+            const farmerParam = farmerName ? `&farmerName=${encodeURIComponent(farmerName)}` : '';
+            const invoiceParam = invoiceNumber ? `&invoiceNumber=${encodeURIComponent(invoiceNumber)}` : '';
+
+            const response = await api.get(`/buyer/invoices?limit=${LIMIT}&offset=${currentOffset}${statusParam}${dateParams}${endDateParam}${farmerParam}${invoiceParam}`);
+
+            if (response.data.success) {
+                const newInvoices = response.data.data.invoices;
+                const moreAvailable = response.data.data.hasMore;
+
+                if (isInitial) {
+                    setInvoices(newInvoices);
+                } else {
+                    setInvoices(prev => [...prev, ...newInvoices]);
+                }
+
+                setHasMore(moreAvailable);
+                if (newInvoices.length > 0) {
+                    setOffset(currentOffset + LIMIT);
+                }
+            }
         } catch (error) {
+            console.error('Error fetching invoices:', error);
             addToast('Failed to fetch invoices', 'error');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleLoadMore = () => {
+        fetchInvoices(false);
     };
 
     const handleDownloadPDF = (invoice) => {
@@ -34,10 +74,8 @@ export default function BuyerInvoices() {
         addToast('Invoice downloaded successfully!', 'success');
     };
 
-    const filteredInvoices = invoices.filter(inv => {
-        if (filter === 'ALL') return true;
-        return inv.status === filter;
-    });
+    // No client-side filtering needed anymore
+    const filteredInvoices = invoices;
 
     const columns = [
         {
@@ -61,16 +99,21 @@ export default function BuyerInvoices() {
         },
         {
             header: 'Total Amount',
-            render: (inv) => (
-                <span className="font-semibold text-gray-700">
-                    ₹{inv.grand_total?.toFixed(2) || '0.00'}
-                </span>
-            )
+            render: (inv) => {
+                // grand_total is net amount, reverse calculate gross amount
+                const grossAmount = (inv.grand_total || 0) / 0.99;
+                return (
+                    <span className="font-semibold text-gray-700">
+                        ₹{grossAmount.toFixed(2)}
+                    </span>
+                );
+            }
         },
         {
             header: 'Commission (1%)',
             render: (inv) => {
-                const commission = (inv.grand_total || 0) * 0.01;
+                // grand_total already has commission deducted, so reverse calculate
+                const commission = (inv.grand_total || 0) * 0.01 / 0.99;
                 return (
                     <span className="text-amber-600 font-medium text-sm">
                         ₹{commission.toFixed(2)}
@@ -81,11 +124,10 @@ export default function BuyerInvoices() {
         {
             header: 'Net to Farmer',
             render: (inv) => {
-                const commission = (inv.grand_total || 0) * 0.01;
-                const netToFarmer = (inv.grand_total || 0) - commission;
+                // grand_total already has commission deducted in backend
                 return (
                     <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md text-sm">
-                        ₹{netToFarmer.toFixed(2)}
+                        ₹{(inv.grand_total || 0).toFixed(2)}
                     </span>
                 );
             }
@@ -123,20 +165,6 @@ export default function BuyerInvoices() {
                     <h1 className="text-3xl font-bold text-gray-900">Invoice History</h1>
                     <p className="text-gray-500">Record of all generated purchase invoices</p>
                 </div>
-                <div className="flex gap-2 p-1 bg-white border border-gray-200 rounded-xl shadow-sm">
-                    {['ALL', 'PAID', 'PENDING'].map((status) => (
-                        <button
-                            key={status}
-                            onClick={() => setFilter(status)}
-                            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${filter === status
-                                ? 'bg-gray-900 text-white shadow-md'
-                                : 'text-gray-500 hover:bg-gray-50'
-                                }`}
-                        >
-                            {status}
-                        </button>
-                    ))}
-                </div>
             </div>
 
             {/* Commission Info Banner */}
@@ -154,13 +182,96 @@ export default function BuyerInvoices() {
                 </div>
             </div>
 
-            <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden">
-                <Table
-                    columns={columns}
-                    data={filteredInvoices}
-                    loading={loading}
-                    emptyMessage="No invoices found matching criteria"
-                />
+            <div className="space-y-4">
+                <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden">
+                    {/* Filter Tabs */}
+                    <div className="p-6 border-b border-gray-100 bg-gray-50/50 space-y-4">
+                        <div className="flex gap-2 p-1 bg-gray-200/50 rounded-xl w-fit">
+                            {['ALL', 'PAID', 'PENDING'].map((status) => (
+                                <button
+                                    key={status}
+                                    onClick={() => setFilter(status)}
+                                    className={`px-6 py-2 rounded-lg text-xs font-bold transition-all duration-300 ${filter === status
+                                        ? 'bg-white text-emerald-600 shadow-sm transform scale-105'
+                                        : 'text-gray-500 hover:text-gray-700'
+                                        }`}
+                                >
+                                    {status}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Additional Filters */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <input
+                                type="text"
+                                placeholder="Search Invoice #"
+                                value={invoiceNumber}
+                                onChange={(e) => setInvoiceNumber(e.target.value)}
+                                className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                            />
+                            <input
+                                type="text"
+                                placeholder="Search Farmer Name"
+                                value={farmerName}
+                                onChange={(e) => setFarmerName(e.target.value)}
+                                className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                            />
+                            <input
+                                type="date"
+                                placeholder="From Date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                            />
+                            <input
+                                type="date"
+                                placeholder="To Date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                            />
+                        </div>
+
+                        {/* Clear Filters Button */}
+                        {(invoiceNumber || farmerName || startDate || endDate) && (
+                            <button
+                                onClick={() => {
+                                    setInvoiceNumber('');
+                                    setFarmerName('');
+                                    setStartDate('');
+                                    setEndDate('');
+                                }}
+                                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-all"
+                            >
+                                Clear Filters
+                            </button>
+                        )}
+                    </div>
+
+                    <Table
+                        columns={columns}
+                        data={filteredInvoices}
+                        loading={loading}
+                        emptyMessage="No invoices found matching criteria"
+                    />
+                </div>
+
+                {hasMore && (
+                    <div className="flex justify-center p-4">
+                        <button
+                            onClick={handleLoadMore}
+                            disabled={loading}
+                            className="px-6 py-2 bg-white border border-gray-200 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
+                        >
+                            {loading ? (
+                                <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                                <span>Show More</span>
+                            )}
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

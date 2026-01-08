@@ -16,6 +16,7 @@ export default function BuyerFieldRoute() {
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [collectionModalOpen, setCollectionModalOpen] = useState(false);
     const [routeMetrics, setRouteMetrics] = useState(null);
+    const [hubLocation, setHubLocation] = useState(null);
     const { addToast } = useToast();
 
     useEffect(() => {
@@ -27,6 +28,7 @@ export default function BuyerFieldRoute() {
         try {
             const response = await api.get('/buyer/route');
             setBookings(response.data.data.bookings);
+            setHubLocation(response.data.data.hubLocation);
         } catch (error) {
             addToast('Failed to fetch route', 'error');
         } finally {
@@ -105,12 +107,6 @@ export default function BuyerFieldRoute() {
         }
     ];
 
-    // Hub location (warehouse) - Singanallur, Coimbatore, Tamil Nadu, India
-    const hubLocation = {
-        lat: 11.0168,
-        lng: 77.0323,
-        name: 'Warehouse - Singanallur'
-    };
     // Transform bookings to farmer bookings format for BuyerRouteMap
     const farmerBookings = bookings.map(booking => ({
         id: booking.id,

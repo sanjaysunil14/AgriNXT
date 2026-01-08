@@ -23,7 +23,7 @@ const addWatermark = (doc) => {
         doc.setTextColor(150, 150, 150);
         doc.setFontSize(60);
         doc.setFont('helvetica', 'bold');
-        
+
         // Center text
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
@@ -74,7 +74,7 @@ const drawBranding = (doc, title, docNumber) => {
 // ==========================================
 export const generateInvoicePDF = (invoice, buyerName, farmerName) => {
     const doc = new jsPDF();
-    
+
     // -- Header --
     drawBranding(doc, 'Invoice', invoice.invoice_number);
 
@@ -95,23 +95,23 @@ export const generateInvoicePDF = (invoice, buyerName, farmerName) => {
 
     // Date & Status
     drawLabelVal('Invoice Date', new Date(invoice.date).toLocaleDateString('en-IN', { dateStyle: 'medium' }), 15, startY);
-    
+
     // Status Pill
     doc.setFontSize(8);
     doc.setTextColor(...THEME.textSub);
     doc.setFont('helvetica', 'bold');
-    doc.text('PAYMENT STATUS', 80, startY);
-    
+    doc.text('PAYMENT STATUS', 168, startY);
+
     const isPaid = invoice.status === 'PAID';
     doc.setFillColor(...(isPaid ? THEME.primary : [220, 38, 38])); // Green or Red
-    doc.roundedRect(80, startY + 2, 24, 7, 3, 3, 'F');
+    doc.roundedRect(168, startY + 2, 24, 7, 3, 3, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(8);
-    doc.text(isPaid ? 'PAID' : 'PENDING', 92, startY + 6.5, { align: 'center' });
+    doc.text(isPaid ? 'PAID' : 'PENDING', 180, startY + 6.5, { align: 'center' });
 
     // -- Farmer & Buyer Section --
     const yParties = startY + 20;
-    
+
     // FROM (Farmer)
     doc.setFontSize(9);
     doc.setTextColor(...THEME.secondary); // Navy Blue Header
@@ -145,12 +145,13 @@ export const generateInvoicePDF = (invoice, buyerName, farmerName) => {
     doc.text('Verified Partner', 115, yParties + 14);
 
     // -- Table --
+    // UPDATED: Using Math.round() to remove decimals
     const tableData = invoice.line_items.map(item => [
         item.vegetable,
         item.chit_code || '-',
-        `${item.weight.toFixed(2)} kg`,
-        `₹ ${item.price_per_kg.toFixed(2)}`,
-        `₹ ${item.total.toFixed(2)}`
+        `${Math.round(item.weight)} kg`,
+        `Rs ${Math.round(item.price_per_kg)} /kg`,
+        `Rs ${Math.round(item.total)}`
     ]);
 
     autoTable(doc, {
@@ -164,21 +165,22 @@ export const generateInvoicePDF = (invoice, buyerName, farmerName) => {
             fontSize: 9,
             fontStyle: 'bold',
             halign: 'left',
-            cellPadding: 10
+            cellPadding: 5
         },
         styles: {
             fontSize: 10,
-            cellPadding: 10,
+            cellPadding: 5,
             textColor: THEME.textMain,
             valign: 'middle',
-            lineColor: [240, 240, 240],
-            lineWidth: { bottom: 0.1 }
+            lineColor: [0, 0, 0],
+            lineWidth: 0.1
         },
         columnStyles: {
-            0: { fontStyle: 'bold', textColor: THEME.secondary },
-            2: { halign: 'right' },
-            3: { halign: 'right' },
-            4: { halign: 'right', fontStyle: 'bold' }
+            0: { cellWidth: 40, fontStyle: 'bold', textColor: THEME.secondary },
+            1: { cellWidth: 43, halign: 'left' },
+            2: { cellWidth: 30, halign: 'left' },
+            3: { cellWidth: 35, halign: 'left' },
+            4: { cellWidth: 35, halign: 'left', fontStyle: 'bold' }
         },
         alternateRowStyles: {
             fillColor: THEME.bgLight
@@ -190,35 +192,39 @@ export const generateInvoicePDF = (invoice, buyerName, farmerName) => {
     const summaryX = 120; // Start X for summary section
     const rightEdge = 195;
 
+    // IMPORTANT: invoice.grand_total is already the NET amount (after 1% commission deduction)
+    // So we need to reverse calculate the GROSS amount
+    // If net = gross - (gross * 0.01), then net = gross * 0.99, so gross = net / 0.99
+    const netPayable = Math.round(invoice.grand_total); // This is the actual net amount (990)
+    const grossAmount = Math.round(invoice.grand_total / 0.99); // Reverse calculate gross (1000)
+    const commissionAmount = grossAmount - netPayable; // Commission is the difference (10)
+
     // Gross Amount
     doc.setFontSize(10);
     doc.setTextColor(...THEME.textMain);
     doc.text('Gross Amount', summaryX, finalY);
-    doc.text(`₹ ${invoice.grand_total.toFixed(2)}`, rightEdge, finalY, { align: 'right' });
-    
-    // Commission (Example Logic)
+    doc.text(`RS ${grossAmount}`, rightEdge, finalY, { align: 'right' });
+
+    // Commission
     finalY += 7;
-    const commission = invoice.grand_total * 0.01; // 1%
-    const netPayable = invoice.grand_total - commission;
-    
     doc.setTextColor(...[220, 38, 38]); // Red text for deductions
     doc.text('Platform Commission (1%)', summaryX, finalY);
-    doc.text(`- ₹ ${commission.toFixed(2)}`, rightEdge, finalY, { align: 'right' });
+    doc.text(`- RS: ${commissionAmount}`, rightEdge, finalY, { align: 'right' });
 
     // Net Payable Box
-    finalY += 8;
+    finalY += 15;
     doc.setFillColor(...THEME.secondary); // Dark Navy Box
-    doc.roundedRect(summaryX - 5, finalY - 6, (rightEdge - summaryX) + 10, 14, 2, 2, 'F');
-    
+    doc.roundedRect(summaryX - 5, finalY - 5, (rightEdge - summaryX) + 10, 14, 2, 2, 'F');
+
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text('Net Payable', summaryX, finalY);
-    doc.text(`₹ ${netPayable.toFixed(2)}`, rightEdge, finalY, { align: 'right' });
+    doc.text('Net Payable', summaryX, finalY + 3);
+    doc.text(`RS ${netPayable}`, rightEdge, finalY + 3, { align: 'right' });
 
     // Footer & Watermark
     addWatermark(doc);
-    
+
     // Simple footer text
     doc.setFontSize(8);
     doc.setTextColor(...THEME.textSub);
@@ -233,7 +239,7 @@ export const generateInvoicePDF = (invoice, buyerName, farmerName) => {
 // ==========================================
 export const generateCollectionChitPDF = (chit, buyerName, farmerName, items) => {
     const doc = new jsPDF();
-    
+
     drawBranding(doc, 'Collection Chit', chit.chit_code);
 
     // -- Info Box --
@@ -252,13 +258,15 @@ export const generateCollectionChitPDF = (chit, buyerName, farmerName, items) =>
     doc.text(new Date(chit.collection_date).toLocaleDateString('en-IN', { dateStyle: 'medium' }), 25, boxY + 7);
 
     // Weight
+    // UPDATED: Rounding total weight
     doc.text('TOTAL WEIGHT', 100, boxY);
     doc.setFontSize(14);
     doc.setTextColor(...THEME.primary);
-    doc.text(`${chit.total_weight.toFixed(2)} kg`, 100, boxY + 8);
+    doc.text(`${Math.round(chit.total_weight)} kg`, 100, boxY + 8);
 
     // Location
-    if(chit.location_lat) {
+    // NOTE: Coordinates kept as decimals for map accuracy
+    if (chit.location_lat) {
         doc.setFontSize(9);
         doc.setTextColor(...THEME.textSub);
         doc.setFont('helvetica', 'normal');
@@ -267,7 +275,7 @@ export const generateCollectionChitPDF = (chit, buyerName, farmerName, items) =>
 
     // -- Participants --
     const partY = 105;
-    
+
     doc.setFontSize(10);
     doc.setTextColor(...THEME.secondary);
     doc.setFont('helvetica', 'bold');
@@ -285,9 +293,10 @@ export const generateCollectionChitPDF = (chit, buyerName, farmerName, items) =>
     doc.text(buyerName, 115, partY + 10);
 
     // -- Table --
+    // UPDATED: Rounding item weights
     const tableData = items.map(item => [
         item.vegetable_name,
-        `${item.weight.toFixed(2)} kg`,
+        `${Math.round(item.weight)} kg`,
         'Confirmed'
     ]);
 

@@ -474,7 +474,7 @@ export const getTodaysRoute = async (req, res) => {
     try {
         const userId = req.user.userId;
 
-        // Get farmer's info
+        // Get farmer's info including zone
         const farmer = await prisma.user.findUnique({
             where: { id: userId },
             select: {
@@ -482,7 +482,8 @@ export const getTodaysRoute = async (req, res) => {
                 full_name: true,
                 phone_number: true,
                 latitude: true,
-                longitude: true
+                longitude: true,
+                zone: true
             }
         });
 
@@ -493,12 +494,52 @@ export const getTodaysRoute = async (req, res) => {
             });
         }
 
+        if (!farmer.zone) {
+            return res.status(400).json({
+                success: false,
+                message: 'Your zone has not been assigned yet. Please contact admin.'
+            });
+        }
+
+        // Import zone hub configuration
+        const { getZoneHub } = await import('../config/zoneConfig.js');
+
+        // Get hub location for this zone
+        const zoneHub = getZoneHub(farmer.zone);
+
+        if (!zoneHub) {
+            return res.status(500).json({
+                success: false,
+                message: 'Hub location not configured for your zone'
+            });
+        }
+
+        const buyerHub = {
+            lat: zoneHub.latitude,
+            lng: zoneHub.longitude,
+            name: zoneHub.name
+        };
+
+        // Find the buyer assigned to this farmer's zone (for buyer info only)
+        const buyer = await prisma.user.findFirst({
+            where: {
+                role: 'BUYER',
+                zone: farmer.zone,
+                is_active: true
+            },
+            select: {
+                id: true,
+                full_name: true,
+                phone_number: true
+            }
+        });
+
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
 
-        // Get all bookings for today (to show the buyer's route)
+        // Get all bookings for today in the SAME ZONE (zone-based filtering)
         const allBookings = await prisma.booking.findMany({
             where: {
                 date: {
@@ -507,6 +548,11 @@ export const getTodaysRoute = async (req, res) => {
                 },
                 status: {
                     in: ['PENDING', 'OPEN', 'ROUTED']
+                },
+                farmer: {
+                    user: {
+                        zone: farmer.zone  // Critical: Only show bookings from same zone
+                    }
                 }
             },
             include: {
@@ -533,21 +579,9 @@ export const getTodaysRoute = async (req, res) => {
         if (allBookings.length === 0) {
             return res.status(404).json({
                 success: false,
-                message: 'No bookings scheduled for today'
+                message: 'No bookings scheduled for today in your zone'
             });
         }
-
-        // Get buyer info from first booking
-        const firstBooking = allBookings[0];
-        const buyerId = firstBooking.farmer.user.id; // This is actually wrong, need to get buyer differently
-
-        // Actually, we need to find who the buyer is - let's get from a different approach
-        // For now, use a placeholder hub location (you can update this)
-        const buyerHub = {
-            lat: 12.9716,
-            lng: 77.5946,
-            name: 'Collection Hub'
-        };
 
         // Build response
         const routeData = {
@@ -561,6 +595,11 @@ export const getTodaysRoute = async (req, res) => {
                 }
             },
             buyer_hub: buyerHub,
+            buyer: buyer ? {
+                id: buyer.id,
+                name: buyer.full_name,
+                phone: buyer.phone_number
+            } : null,
             all_stops: allBookings.map((booking, index) => ({
                 sequence: index + 1,
                 farmer_id: booking.farmer.user.id,
@@ -574,7 +613,8 @@ export const getTodaysRoute = async (req, res) => {
                 quantity_kg: booking.quantity_kg,
                 is_current_farmer: booking.farmer.user.id === userId
             })),
-            total_stops: allBookings.length
+            total_stops: allBookings.length,
+            zone: farmer.zone
         };
 
         res.json({
@@ -593,7 +633,7 @@ export const getTodaysRoute = async (req, res) => {
 // Get vegetable list (default + approved custom)
 export const getVegetableList = async (req, res) => {
     try {
-        const { DEFAULT_VEGETABLES } = await import('../utils/vegetableConfig.js');
+        const { DEFAULT_VEGETABLES } = await import('../config/vegetableConfig.js');
 
         // Get approved custom vegetables
         const approvedVegetables = await prisma.vegetableRequest.findMany({
@@ -623,7 +663,7 @@ export const requestNewVegetable = async (req, res) => {
     try {
         const userId = req.user.userId;
         const { vegetable_name } = req.body;
-        const { DEFAULT_VEGETABLES } = await import('../utils/vegetableConfig.js');
+        const { DEFAULT_VEGETABLES } = await import('../config/vegetableConfig.js');
 
         if (!vegetable_name || vegetable_name.trim() === '') {
             return res.status(400).json({

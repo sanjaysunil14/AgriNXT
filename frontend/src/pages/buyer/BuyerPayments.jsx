@@ -111,7 +111,7 @@ export default function BuyerPayments() {
                 {[
                     { title: 'Farmers Pending', value: dues.length, icon: User, color: 'text-orange-600', bg: 'bg-orange-100' },
                     { title: 'Total Liability', value: `₹${dues.reduce((sum, f) => sum + f.balance, 0).toFixed(2)}`, icon: Wallet, color: 'text-red-600', bg: 'bg-red-100' },
-                    { title: 'Avg. Ticket Size', value: `₹${dues.length > 0 ? (dues.reduce((sum, f) => sum + f.balance, 0) / dues.length).toFixed(0) : '0'}`, icon: Phone, color: 'text-blue-600', bg: 'bg-blue-100' }
+                    { title: 'Avg. Price', value: `₹${dues.length > 0 ? (dues.reduce((sum, f) => sum + f.balance, 0) / dues.length).toFixed(0) : '0'}`, icon: Phone, color: 'text-blue-600', bg: 'bg-blue-100' }
                 ].map((stat, i) => (
                     <div key={i} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                         <div>

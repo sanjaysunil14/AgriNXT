@@ -4,6 +4,7 @@ import { Warehouse, MapPin, Package } from 'lucide-react';
 import L from 'leaflet';
 import axios from 'axios';
 import api from '../../utils/api';
+import { useToast } from '../ui/Toast';
 import 'leaflet/dist/leaflet.css';
 
 // Fix default marker icons
@@ -141,17 +142,7 @@ export default function BuyerRouteMap({ hubLocation, farmerBookings, onRouteOpti
             // Get optimized waypoint order from OSRM
             const waypoints = response.data.waypoints;
 
-            console.log('=== OSRM WAYPOINT DEBUG ===');
-            console.log('Total bookings:', farmerBookings.length);
-            console.log('Farmer names:', farmerBookings.map(f => f.farmerName));
-            console.log('Total waypoints from OSRM:', waypoints.length);
-            console.log('All waypoints:', waypoints.map((w, i) => ({
-                index: i,
-                waypoint_index: w.waypoint_index,
-                trips_index: w.trips_index,
-                location: w.location
-            })));
-
+            
             // Filter out hub waypoints and sort by trip order
             // waypoint_index 0 is always the hub, so we filter it out
             const farmerWaypoints = waypoints
@@ -187,8 +178,7 @@ export default function BuyerRouteMap({ hubLocation, farmerBookings, onRouteOpti
                 };
             });
 
-            console.log('Final optimized order:', orderedFarmersWithETA.map(f => f.farmerName));
-            console.log('=== END DEBUG ===');
+
 
             setOptimizedOrder(orderedFarmersWithETA);
 
@@ -570,7 +560,7 @@ export default function BuyerRouteMap({ hubLocation, farmerBookings, onRouteOpti
                                             <div className="flex items-center gap-2 text-gray-600">
                                                 <span>📍</span>
                                                 <span className="truncate max-w-[200px]" title={farmer.village || `${farmer.lat}, ${farmer.lng}`}>
-                                                    {farmer.village || `${farmer.lat.toFixed(4)}, ${farmer.lng.toFixed(4)}`}
+                                                    {Number(farmer.lat).toFixed(4)}, {Number(farmer.lng).toFixed(4)}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-2 text-gray-600 col-span-1 sm:col-span-2">

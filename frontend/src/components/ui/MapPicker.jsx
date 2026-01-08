@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { MapPin, X, Navigation } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useToast } from './Toast';
 
 // Fix marker icons
 delete L.Icon.Default.prototype._getIconUrl;

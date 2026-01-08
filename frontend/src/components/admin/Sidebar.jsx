@@ -11,10 +11,10 @@ export default function Sidebar({ isOpen, onClose }) {
         { to: '/admin/vegetable-requests', icon: Carrot, label: 'Vegetable Requests' },
         { to: '/admin/set-prices', icon: DollarSign, label: 'Set Daily Prices' },
         { to: '/admin/profitability', icon: TrendingUp, label: 'Profitability Analysis' },
-        { to: '/admin/performance', icon: Sparkles, label: 'AI Performance Summary' },
+        { to: '/admin/performance', icon: Sparkles, label: 'AI Summary' },
         { to: '/admin/invoices', icon: FileText, label: 'Invoice Management' },
         { to: '/admin/audit-logs', icon: FileText, label: 'Audit Logs' },
-        
+
     ];
 
     return (

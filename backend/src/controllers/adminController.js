@@ -452,13 +452,9 @@ export const setDailyPrices = async (req, res) => {
             });
         }
 
-        // Find unpriced collection chits for the target date
+        // Find unpriced collection chits (not filtered by date)
         const unpricedChits = await prisma.collectionChit.findMany({
             where: {
-                collection_date: {
-                    gte: targetDate,
-                    lt: new Date(targetDate.getTime() + 24 * 60 * 60 * 1000)
-                },
                 is_priced: false
             },
             include: {
@@ -476,6 +472,8 @@ export const setDailyPrices = async (req, res) => {
                 }
             }
         });
+
+        console.log(`📋 Found ${unpricedChits.length} unpriced collection chits`);
 
         let invoicesGenerated = 0;
         let totalAmount = 0;
@@ -525,6 +523,10 @@ export const setDailyPrices = async (req, res) => {
             const invoiceCount = await prisma.invoice.count();
             const invoiceNumber = `INV-${targetDate.getFullYear()}-${String(invoiceCount + 1).padStart(5, '0')}`;
 
+            // Apply 1% commission deduction (farmer gets 99% of total)
+            const commission = grandTotal * 0.01;
+            const grandTotalAfterCommission = grandTotal - commission;
+
             // Create invoice
             await prisma.invoice.create({
                 data: {
@@ -533,13 +535,13 @@ export const setDailyPrices = async (req, res) => {
                     farmer_id: group.farmer_id,
                     date: targetDate,
                     line_items: lineItems,
-                    grand_total: grandTotal,
+                    grand_total: grandTotalAfterCommission,
                     status: 'PENDING'
                 }
             });
 
             invoicesGenerated++;
-            totalAmount += grandTotal;
+            totalAmount += grandTotalAfterCommission;
         }
 
         // Log audit action

@@ -20,7 +20,7 @@ export default function Table({
     if (!data || data.length === 0) {
         return (
             <div className="text-center py-12">
-                <p className="text-gray-500">{emptyMessage}</p>
+                <div className="text-gray-500">{emptyMessage}</div>
             </div>
         );
     }

@@ -1,4 +1,5 @@
 export const getDepartureTime = () => {
+    /*base10 integer */
     const hour = parseInt(process.env.DEPARTURE_TIME_HOUR || '12', 10);
     const today = new Date();
     today.setHours(hour, 0, 0, 0);

@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import whatsAppService from '../services/WhatsAppService.js';
 import { logAuditAction } from '../utils/auditLogger.js';
+import { getZoneHub } from '../config/zoneConfig.js';
 
 const prisma = new PrismaClient();
 
@@ -23,14 +24,12 @@ export const getRoute = async (req, res) => {
         }
 
         if (!buyer.zone) {
-            console.warn(`⚠️ Buyer ${userId} (${buyer.full_name}) has no zone assigned`);
             return res.status(400).json({
                 success: false,
                 message: 'Your zone is not assigned. Please contact admin.'
             });
         }
 
-        console.log(`🔍 Fetching route for buyer ${buyer.full_name} in zone: ${buyer.zone}`);
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -50,7 +49,7 @@ export const getRoute = async (req, res) => {
                 },
                 farmer: {
                     user: {
-                        zone: buyer.zone  // ✅ Zone filter added
+                        zone: buyer.zone
                     }
                 }
             },
@@ -75,7 +74,7 @@ export const getRoute = async (req, res) => {
             }
         });
 
-        console.log(`✅ Found ${bookings.length} bookings in ${buyer.zone} zone`);
+
 
         // Transform data for frontend
         const routeData = bookings.map(booking => ({
@@ -94,9 +93,21 @@ export const getRoute = async (req, res) => {
             }
         }));
 
+        // Get hub location for buyer's zone
+        const zoneHub = getZoneHub(buyer.zone);
+        const hubLocation = zoneHub ? {
+            lat: zoneHub.latitude,
+            lng: zoneHub.longitude,
+            name: zoneHub.name,
+            city: zoneHub.city
+        } : null;
+
         res.json({
             success: true,
-            data: { bookings: routeData }
+            data: {
+                bookings: routeData,
+                hubLocation: hubLocation
+            }
         });
     } catch (error) {
         console.error('❌ Error getting route:', error);
@@ -160,7 +171,7 @@ export const collectProduce = async (req, res) => {
             select: { zone: true, full_name: true }
         });
 
-        // ✅ Validate zone matching
+
         if (!buyer.zone) {
             console.warn(` Buyer ${userId} (${buyer.full_name}) has no zone assigned`);
             return res.status(400).json({
@@ -197,17 +208,28 @@ export const collectProduce = async (req, res) => {
         const totalWeight = items.reduce((sum, item) => sum + parseFloat(item.weight), 0);
 
         // Generate unique chit code
-        const today = new Date();
-        const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+
+        // Create separate date objects to avoid mutation
+        const startOfDay = new Date(now);
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const endOfDay = new Date(now);
+        endOfDay.setHours(23, 59, 59, 999);
+
         const count = await prisma.collectionChit.count({
             where: {
                 collection_date: {
-                    gte: new Date(today.setHours(0, 0, 0, 0)),
-                    lt: new Date(today.setHours(23, 59, 59, 999))
+                    gte: startOfDay,
+                    lt: endOfDay
                 }
             }
         });
-        const chitCode = `CH-${dateStr}-${String(count + 1).padStart(3, '0')}`;
+
+        // Add milliseconds for better uniqueness to avoid race conditions
+        const timeStr = now.getTime().toString().slice(-4);
+        const chitCode = `CH-${dateStr}-${String(count + 1).padStart(3, '0')}-${timeStr}`;
 
         // Create route and route stop first (required for collection chit)
         const route = await prisma.route.create({
@@ -351,7 +373,6 @@ export const getUnpricedCollections = async (req, res) => {
             }
         });
 
-        console.log(`🔍 Found ${unpricedChits.length} unpriced chits in ${buyer.zone} zone`);
 
         // Aggregate vegetables and their total weights
         const vegetableSummary = {};
@@ -417,139 +438,7 @@ export const getDailyPrices = async (req, res) => {
     }
 };
 
-// Set daily prices and generate invoices
-export const setDailyPrices = async (req, res) => {
-    try {
-        const userId = req.user.userId;
-        const { prices, date } = req.body;
 
-        // Validation
-        if (!prices || typeof prices !== 'object') {
-            return res.status(400).json({
-                success: false,
-                message: 'Prices object is required'
-            });
-        }
-
-        const targetDate = date ? new Date(date) : new Date();
-        targetDate.setHours(0, 0, 0, 0);
-
-        // Insert/Update daily prices
-        for (const [vegetable, price] of Object.entries(prices)) {
-            await prisma.dailyPrice.upsert({
-                where: {
-                    date_vegetable_name: {
-                        date: targetDate,
-                        vegetable_name: vegetable
-                    }
-                },
-                update: {
-                    price_per_kg: parseFloat(price)
-                },
-                create: {
-                    date: targetDate,
-                    vegetable_name: vegetable,
-                    price_per_kg: parseFloat(price)
-                }
-            });
-        }
-
-        // Find unpriced collection chits for the target date
-        const unpricedChits = await prisma.collectionChit.findMany({
-            where: {
-                collection_date: {
-                    gte: targetDate,
-                    lt: new Date(targetDate.getTime() + 24 * 60 * 60 * 1000)
-                },
-                is_priced: false
-            },
-            include: {
-                collection_items: true,
-                farmer: {
-                    select: {
-                        id: true,
-                        full_name: true
-                    }
-                }
-            }
-        });
-
-        let invoicesGenerated = 0;
-        let totalAmount = 0;
-
-        // Group chits by farmer
-        const chitsByFarmer = {};
-        for (const chit of unpricedChits) {
-            if (!chitsByFarmer[chit.farmer_id]) {
-                chitsByFarmer[chit.farmer_id] = [];
-            }
-            chitsByFarmer[chit.farmer_id].push(chit);
-        }
-
-        // Generate invoices for each farmer
-        for (const [farmerId, chits] of Object.entries(chitsByFarmer)) {
-            const lineItems = [];
-            let grandTotal = 0;
-
-            for (const chit of chits) {
-                for (const item of chit.collection_items) {
-                    const pricePerKg = prices[item.vegetable_name] || 0;
-                    const itemTotal = item.weight * pricePerKg;
-                    grandTotal += itemTotal;
-
-                    lineItems.push({
-                        vegetable: item.vegetable_name,
-                        weight: item.weight,
-                        price_per_kg: pricePerKg,
-                        total: itemTotal,
-                        chit_code: chit.chit_code
-                    });
-                }
-
-                // Mark chit as priced
-                await prisma.collectionChit.update({
-                    where: { id: chit.id },
-                    data: { is_priced: true }
-                });
-            }
-
-            // Generate invoice number
-            const invoiceCount = await prisma.invoice.count();
-            const invoiceNumber = `INV-${targetDate.getFullYear()}-${String(invoiceCount + 1).padStart(5, '0')}`;
-
-            // Create invoice
-            await prisma.invoice.create({
-                data: {
-                    invoice_number: invoiceNumber,
-                    buyer_id: userId,
-                    farmer_id: parseInt(farmerId),
-                    date: targetDate,
-                    line_items: lineItems,
-                    grand_total: grandTotal,
-                    status: 'PENDING'
-                }
-            });
-
-            invoicesGenerated++;
-            totalAmount += grandTotal;
-        }
-
-        res.json({
-            success: true,
-            message: `Generated ${invoicesGenerated} invoice(s)`,
-            data: {
-                invoices_generated: invoicesGenerated,
-                total_amount: totalAmount
-            }
-        });
-    } catch (error) {
-        console.error('Error setting daily prices:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to set prices and generate invoices'
-        });
-    }
-};
 
 // Get farmers with outstanding dues
 export const getDues = async (req, res) => {
@@ -734,7 +623,7 @@ export const recordPayment = async (req, res) => {
                 name: farmer.full_name,
                 phone: farmer.phone_number
             },
-            `💰 Payment Received!
+            ` Payment Send!
 
 Dear ${farmer.full_name},
 

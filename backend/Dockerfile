@@ -41,5 +41,5 @@ USER app
 
 EXPOSE 5000
 
-# Run migrations and start the server
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+# Run migrations, seed database, and start the server
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run seed && npm start"]

@@ -1,7 +1,6 @@
 databases:
   - name: farmer-buyer-db
     databaseName: farmer_buyer_db
-    user: postgres
     plan: free
 
 services:

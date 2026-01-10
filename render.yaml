@@ -30,22 +30,9 @@ services:
         sync: false
       - key: TWILIO_WHATSAPP_NUMBER
         sync: false
-
-staticSites:
-  # Frontend Service (React + Vite)
-  - name: farmer-buyer-frontend
-    repo: https://github.com/sanjaysunil14/Week-5-Test
-    rootDir: frontend
-    buildCommand: npm install && npm run build
-    publishDir: dist
-    plan: free
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: VITE_API_URL
-        fromService:
-          type: web
-          name: farmer-buyer-backend
-          property: url
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: DEV_TEST_NUMBER
+        sync: false
+      - key: DEPARTURE_TIME_HOUR
+        value: "12"

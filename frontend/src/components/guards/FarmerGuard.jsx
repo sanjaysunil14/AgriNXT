@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import Spinner from '../ui/Spinner';
+import api from '../../utils/api';
 
 export default function FarmerGuard({ children }) {
     const [loading, setLoading] = useState(true);
@@ -10,23 +11,19 @@ export default function FarmerGuard({ children }) {
         checkFarmerRole();
     }, []);
 
-    const checkFarmerRole = () => {
+    const checkFarmerRole = async () => {
         try {
-            const token = sessionStorage.getItem('accessToken');
+            // API call will include cookie automatically
+            const response = await api.get('/users/me');
 
-            if (!token) {
-                setIsFarmer(false);
-                setLoading(false);
-                return;
-            }
+            if (response.data.success) {
+                const userRole = response.data.data.user.role;
 
-            // Decode JWT token to get user role
-            const payload = JSON.parse(atob(token.split('.')[1]));
-
-            if (payload.role === 'FARMER') {
-                setIsFarmer(true);
-            } else {
-                setIsFarmer(false);
+                if (userRole === 'FARMER') {
+                    setIsFarmer(true);
+                } else {
+                    setIsFarmer(false);
+                }
             }
         } catch (error) {
             console.error('Farmer check failed:', error);

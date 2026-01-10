@@ -198,6 +198,14 @@ export const login = async (req, res) => {
       { expiresIn: '7d' } // 7 days
     );
 
+    // Set access token as HTTP-only cookie
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000 // 15 minutes
+    });
+
     // Set refresh token as HTTP-only cookie
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import Spinner from '../ui/Spinner';
+import api from '../../utils/api';
 
 export default function AdminGuard({ children }) {
     const [loading, setLoading] = useState(true);
@@ -10,23 +11,19 @@ export default function AdminGuard({ children }) {
         checkAdminAccess();
     }, []);
 
-    const checkAdminAccess = () => {
+    const checkAdminAccess = async () => {
         try {
-            const token = sessionStorage.getItem('accessToken');
+            // API call will include cookie automatically
+            const response = await api.get('/users/me');
 
-            if (!token) {
-                setIsAdmin(false);
-                setLoading(false);
-                return;
-            }
+            if (response.data.success) {
+                const userRole = response.data.data.user.role;
 
-            // Decode JWT token to get user role
-            const payload = JSON.parse(atob(token.split('.')[1]));
-
-            if (payload.role === 'ADMIN') {
-                setIsAdmin(true);
-            } else {
-                setIsAdmin(false);
+                if (userRole === 'ADMIN') {
+                    setIsAdmin(true);
+                } else {
+                    setIsAdmin(false);
+                }
             }
         } catch (error) {
             console.error('Admin check failed:', error);

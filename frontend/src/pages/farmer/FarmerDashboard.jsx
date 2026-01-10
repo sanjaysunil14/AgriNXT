@@ -185,19 +185,28 @@ export default function FarmerDashboard() {
             )
         },
         {
-            header: 'Vegetable',
-            render: (booking) => (
-                <div className="flex items-center gap-2">
-                    <Leaf className="w-4 h-4 text-emerald-500" />
-                    <span className="text-gray-900">{booking.vegetable_type || booking.vegetables_summary || '-'}</span>
-                </div>
-            )
-        },
-        {
-            header: 'Quantity (KG)',
+            header: 'Vegetables',
             render: (booking) => {
-                const qty = booking.quantity_kg || booking.estimated_weight;
-                return qty ? <span className="font-bold">{qty.toFixed(2)}</span> : <span className="text-gray-400 text-sm italic">To be weighed</span>;
+                // Show booking_items if available, otherwise fall back to old fields
+                if (booking.booking_items && booking.booking_items.length > 0) {
+                    return (
+                        <div className="flex flex-wrap gap-2">
+                            {booking.booking_items.map((item, idx) => (
+                                <div key={idx} className="flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-lg">
+                                    <Leaf className="w-3 h-3 text-emerald-600" />
+                                    <span className="text-xs font-medium text-emerald-800">{item.vegetable_type}</span>
+                                </div>
+                            ))}
+                        </div>
+                    );
+                }
+                // Fallback for old bookings
+                return (
+                    <div className="flex items-center gap-2">
+                        <Leaf className="w-4 h-4 text-emerald-500" />
+                        <span className="text-gray-900">{booking.vegetable_type || booking.vegetables_summary || '-'}</span>
+                    </div>
+                );
             }
         },
         {

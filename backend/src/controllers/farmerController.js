@@ -69,14 +69,31 @@ export const getDashboardStats = async (req, res) => {
 export const createBooking = async (req, res) => {
     try {
         const userId = req.user.userId;
-        const { collection_date, vegetable_type, quantity_kg } = req.body;
+        const { collection_date, vegetables } = req.body;
 
         // Validation
-        if (!collection_date || !vegetable_type) {
+        if (!collection_date) {
             return res.status(400).json({
                 success: false,
-                message: 'Collection date and vegetable type are required'
+                message: 'Collection date is required'
             });
+        }
+
+        if (!vegetables || !Array.isArray(vegetables) || vegetables.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'At least one vegetable is required'
+            });
+        }
+
+        // Validate each vegetable entry (should be string names now)
+        for (const veg of vegetables) {
+            if (typeof veg !== 'string' || !veg.trim()) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid vegetable data'
+                });
+            }
         }
 
         // Check if date is in the past
@@ -104,14 +121,43 @@ export const createBooking = async (req, res) => {
             });
         }
 
-        // Create booking
+        // Check if booking already exists for this date
+        const existingBooking = await prisma.booking.findFirst({
+            where: {
+                farmer_id: user.farmer_profile.id,
+                date: collectionDate,
+                status: {
+                    not: 'CANCELLED'
+                }
+            }
+        });
+
+        if (existingBooking) {
+            return res.status(400).json({
+                success: false,
+                message: 'You already have a booking for this date. Please cancel it first or choose a different date.'
+            });
+        }
+
+        // Generate summary (without quantities)
+        const vegetablesSummary = vegetables.join(', ');
+
+        // Create booking with items using transaction
         const booking = await prisma.booking.create({
             data: {
                 farmer_id: user.farmer_profile.id,
                 date: collectionDate,
-                vegetable_type,
-                quantity_kg: parseFloat(quantity_kg),
-                status: 'PENDING'
+                vegetables_summary: vegetablesSummary,
+                status: 'PENDING',
+                booking_items: {
+                    create: vegetables.map(veg => ({
+                        vegetable_type: veg.trim(),
+                        quantity_kg: 0 // Buyer will fill actual quantity during collection
+                    }))
+                }
+            },
+            include: {
+                booking_items: true
             }
         });
 
@@ -121,17 +167,25 @@ export const createBooking = async (req, res) => {
             'FARMER',
             'BOOKING_CREATED',
             null,
-            `Farmer ${user.full_name} created a booking for ${collectionDate.toLocaleDateString()}`,
+            `Farmer ${user.full_name} created a booking for ${collectionDate.toLocaleDateString()} with ${vegetables.length} vegetable(s)`,
             req.ip
         );
 
         res.status(201).json({
             success: true,
-            message: 'Booking created successfully. Actual quantity will be recorded during collection.',
+            message: 'Booking created successfully. Quantity will be recorded during collection.',
             data: { booking }
         });
     } catch (error) {
         console.error('Error creating booking:', error);
+
+        // Handle unique constraint violation
+        if (error.code === 'P2002') {
+            return res.status(400).json({
+                success: false,
+                message: 'You already have a booking for this date.'
+            });
+        }
 
         res.status(500).json({
             success: false,
@@ -139,6 +193,7 @@ export const createBooking = async (req, res) => {
         });
     }
 };
+
 
 // Get Farmer's Bookings
 export const getMyBookings = async (req, res) => {
@@ -168,6 +223,9 @@ export const getMyBookings = async (req, res) => {
                     in: ['PENDING', 'OPEN', 'ROUTED']
                 }
             },
+            include: {
+                booking_items: true
+            },
             orderBy: {
                 date: 'asc'
             }
@@ -185,6 +243,7 @@ export const getMyBookings = async (req, res) => {
         });
     }
 };
+
 
 // Cancel Booking
 export const cancelBooking = async (req, res) => {
@@ -309,6 +368,7 @@ export const getHistory = async (req, res) => {
                 }
             },
             include: {
+                booking_items: true,
                 route_stops: {
                     include: {
                         collection_chit: {
@@ -556,6 +616,7 @@ export const getTodaysRoute = async (req, res) => {
                 }
             },
             include: {
+                booking_items: true,
                 farmer: {
                     include: {
                         user: {

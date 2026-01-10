@@ -94,20 +94,20 @@ export default function UserApprovals() {
         {
             header: 'Decision',
             render: (user) => (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                     <button
                         onClick={() => handleApprove(user.id)}
-                        className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all shadow-sm"
-                        title="Approve"
+                        className="flex items-center gap-1.5 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-sm font-medium text-sm"
                     >
-                        <CheckCircle className="w-5 h-5" />
+                        <CheckCircle className="w-4 h-4" />
+                        Approve
                     </button>
                     <button
                         onClick={() => handleReject(user.id)}
-                        className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-all shadow-sm"
-                        title="Reject"
+                        className="flex items-center gap-1.5 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all shadow-sm font-medium text-sm"
                     >
-                        <XCircle className="w-5 h-5" />
+                        <XCircle className="w-4 h-4" />
+                        Reject
                     </button>
                 </div>
             )
@@ -154,20 +154,20 @@ export default function UserApprovals() {
         {
             header: 'Decision',
             render: (user) => (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                     <button
                         onClick={() => handleApprove(user.id)}
-                        className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all shadow-sm"
-                        title="Approve"
+                        className="flex items-center gap-1.5 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-sm font-medium text-sm"
                     >
-                        <CheckCircle className="w-5 h-5" />
+                        <CheckCircle className="w-4 h-4" />
+                        Approve
                     </button>
                     <button
                         onClick={() => handleReject(user.id)}
-                        className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-all shadow-sm"
-                        title="Reject"
+                        className="flex items-center gap-1.5 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all shadow-sm font-medium text-sm"
                     >
-                        <XCircle className="w-5 h-5" />
+                        <XCircle className="w-4 h-4" />
+                        Reject
                     </button>
                 </div>
             )
@@ -182,7 +182,7 @@ export default function UserApprovals() {
                     <h1 className="text-3xl font-bold text-gray-900">Registration Requests</h1>
                     <p className="text-gray-500 mt-1">Review and verify new account applications</p>
                 </div>
-                
+
             </div>
 
             {/* Content Container */}
@@ -193,8 +193,8 @@ export default function UserApprovals() {
                         <button
                             onClick={() => setActiveTab('FARMER')}
                             className={`px-6 py-2.5 text-sm font-bold rounded-lg transition-all duration-300 ${activeTab === 'FARMER'
-                                    ? 'bg-white text-emerald-700 shadow-md transform scale-105'
-                                    : 'text-gray-500 hover:text-gray-700'
+                                ? 'bg-white text-emerald-700 shadow-md transform scale-105'
+                                : 'text-gray-500 hover:text-gray-700'
                                 }`}
                         >
                             Farmer Requests
@@ -202,8 +202,8 @@ export default function UserApprovals() {
                         <button
                             onClick={() => setActiveTab('BUYER')}
                             className={`px-6 py-2.5 text-sm font-bold rounded-lg transition-all duration-300 ${activeTab === 'BUYER'
-                                    ? 'bg-white text-blue-700 shadow-md transform scale-105'
-                                    : 'text-gray-500 hover:text-gray-700'
+                                ? 'bg-white text-blue-700 shadow-md transform scale-105'
+                                : 'text-gray-500 hover:text-gray-700'
                                 }`}
                         >
                             Buyer Requests

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Leaf, Calendar, ArrowLeft } from 'lucide-react';
+import { Leaf, Calendar, ArrowLeft, X, Plus } from 'lucide-react';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
@@ -8,12 +8,12 @@ import { useToast } from '../ui/Toast';
 
 export default function BookingModal({ isOpen, onClose, onSuccess }) {
     const [formData, setFormData] = useState({
-        collection_date: '',
-        vegetable_type: ''
+        collection_date: ''
     });
+    const [vegetables, setVegetables] = useState(['']);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [vegetables, setVegetables] = useState([]);
+    const [availableVegetables, setAvailableVegetables] = useState([]);
     const [showCustomInput, setShowCustomInput] = useState(false);
     const [customVegetable, setCustomVegetable] = useState('');
     const { addToast } = useToast();
@@ -21,33 +21,50 @@ export default function BookingModal({ isOpen, onClose, onSuccess }) {
     useEffect(() => {
         if (isOpen) {
             fetchVegetables();
+            // Reset form
+            setFormData({ collection_date: '' });
+            setVegetables(['']);
+            setError('');
         }
     }, [isOpen]);
 
     const fetchVegetables = async () => {
         try {
             const response = await api.get('/farmer/vegetables');
-            setVegetables(response.data.data.vegetables);
+            setAvailableVegetables(response.data.data.vegetables);
         } catch (error) {
             console.error('Failed to fetch vegetables:', error);
         }
     };
 
-    const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
+    const handleDateChange = (e) => {
+        setFormData({ collection_date: e.target.value });
         setError('');
     };
 
-    const handleVegetableChange = (e) => {
-        if (e.target.value === '__ADD_NEW__') {
+    const handleVegetableChange = (index, value) => {
+        const updatedVegetables = [...vegetables];
+        updatedVegetables[index] = value;
+        setVegetables(updatedVegetables);
+        setError('');
+    };
+
+    const addVegetable = () => {
+        setVegetables([...vegetables, '']);
+    };
+
+    const removeVegetable = (index) => {
+        if (vegetables.length > 1) {
+            const updatedVegetables = vegetables.filter((_, i) => i !== index);
+            setVegetables(updatedVegetables);
+        }
+    };
+
+    const handleVegetableSelect = (index, value) => {
+        if (value === '__ADD_NEW__') {
             setShowCustomInput(true);
-            setFormData({ ...formData, vegetable_type: '' });
         } else {
-            handleChange(e);
-            setShowCustomInput(false);
+            handleVegetableChange(index, value);
         }
     };
 
@@ -55,6 +72,7 @@ export default function BookingModal({ isOpen, onClose, onSuccess }) {
         e.preventDefault();
         setError('');
 
+        // Handle custom vegetable request
         if (showCustomInput && customVegetable.trim()) {
             setLoading(true);
             try {
@@ -74,11 +92,27 @@ export default function BookingModal({ isOpen, onClose, onSuccess }) {
             }
         }
 
-        if (!formData.collection_date || !formData.vegetable_type) {
-            setError('All fields are required');
+        // Validate
+        if (!formData.collection_date) {
+            setError('Collection date is required');
             return;
         }
 
+        // Check if at least one vegetable is selected
+        const filledVegetables = vegetables.filter(v => v.trim() !== '');
+        if (filledVegetables.length === 0) {
+            setError('At least one vegetable is required');
+            return;
+        }
+
+        // Check for duplicate vegetables
+        const duplicates = filledVegetables.filter((item, index) => filledVegetables.indexOf(item) !== index);
+        if (duplicates.length > 0) {
+            setError(`Duplicate vegetables not allowed: ${duplicates.join(', ')}`);
+            return;
+        }
+
+        // Date validation
         const selectedDate = new Date(formData.collection_date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -91,11 +125,12 @@ export default function BookingModal({ isOpen, onClose, onSuccess }) {
         setLoading(true);
 
         try {
-            await onSuccess(formData);
-            setFormData({
-                collection_date: '',
-                vegetable_type: ''
+            await onSuccess({
+                collection_date: formData.collection_date,
+                vegetables: filledVegetables
             });
+            setFormData({ collection_date: '' });
+            setVegetables(['']);
             onClose();
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to create booking');
@@ -116,7 +151,7 @@ export default function BookingModal({ isOpen, onClose, onSuccess }) {
                     <Calendar className="w-5 h-5 text-emerald-600" />
                 </div>
                 <p className="text-sm text-emerald-800">
-                    Schedule a pickup for your fresh produce.
+                    Schedule a pickup for your fresh produce. You can add multiple vegetables.
                 </p>
             </div>
 
@@ -127,43 +162,64 @@ export default function BookingModal({ isOpen, onClose, onSuccess }) {
                     </div>
                 )}
 
-
                 <Input
                     label="Collection Date *"
                     type="date"
                     name="collection_date"
                     value={formData.collection_date}
-                    onChange={handleChange}
+                    onChange={handleDateChange}
                     min={new Date().toISOString().split('T')[0]}
                     required
                     className="cursor-pointer"
                 />
 
-
-                <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
-                        Vegetable Type *
+                <div className="space-y-3">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide">
+                        Vegetables *
                     </label>
-                    <div className="relative">
-                        <select
-                            name="vegetable_type"
-                            value={formData.vegetable_type}
-                            onChange={handleVegetableChange}
-                            required={!showCustomInput}
-                            className="block w-full rounded-xl border-gray-200 bg-gray-50 py-3 pl-4 pr-10 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500 focus:bg-white transition-colors appearance-none cursor-pointer font-medium"
-                        >
-                            <option value="">Select a vegetable</option>
-                            {vegetables.map((veg) => (
-                                <option key={veg} value={veg}>{veg}</option>
-                            ))}
-                            <option value="__ADD_NEW__" className="text-blue-600 font-bold">
-                                + Request New Vegetable
-                            </option>
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
-                            <Leaf className="w-4 h-4" />
+
+                    {vegetables.map((veg, index) => (
+                        <div key={index} className="flex gap-2 items-center">
+                            <div className="flex-1 relative">
+                                <select
+                                    value={veg}
+                                    onChange={(e) => handleVegetableSelect(index, e.target.value)}
+                                    className="block w-full rounded-xl border-gray-200 bg-gray-50 py-3 pl-4 pr-10 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500 focus:bg-white transition-colors appearance-none cursor-pointer font-medium"
+                                >
+                                    <option value="">Select vegetable</option>
+                                    {availableVegetables.map((vegName) => (
+                                        <option key={vegName} value={vegName}>{vegName}</option>
+                                    ))}
+                                    <option value="__ADD_NEW__" className="text-blue-600 font-bold">
+                                        + Request New Vegetable
+                                    </option>
+                                </select>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                                    <Leaf className="w-4 h-4" />
+                                </div>
+                            </div>
+
+                            {vegetables.length > 1 && (
+                                <button
+                                    type="button"
+                                    onClick={() => removeVegetable(index)}
+                                    className="p-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    title="Remove vegetable"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            )}
                         </div>
-                    </div>
+                    ))}
+
+                    <button
+                        type="button"
+                        onClick={addVegetable}
+                        className="flex items-center gap-2 text-sm font-bold text-emerald-600 hover:text-emerald-700 transition-colors"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Add Another Vegetable
+                    </button>
                 </div>
 
                 {showCustomInput && (

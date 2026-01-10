@@ -2,7 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -166,10 +167,24 @@ model Booking {
   updated_at          DateTime      @updatedAt
 
   // Relations
-  farmer      FarmerProfile @relation(fields: [farmer_id], references: [id], onDelete: Cascade)
-  route_stops RouteStop[]
+  farmer        FarmerProfile  @relation(fields: [farmer_id], references: [id], onDelete: Cascade)
+  route_stops   RouteStop[]
+  booking_items BookingItem[]
 
+  @@unique([farmer_id, date])
   @@map("bookings")
+}
+
+model BookingItem {
+  id             Int     @id @default(autoincrement())
+  booking_id     Int
+  vegetable_type String
+  quantity_kg    Float
+
+  // Relations
+  booking Booking @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+
+  @@map("booking_items")
 }
 
 model Route {

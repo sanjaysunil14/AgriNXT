@@ -33,7 +33,7 @@ export default function InvoiceManagement() {
             const params = {
                 limit: LIMIT,
                 offset: currentOffset,
-                userType: userTypeFilter
+                userType: currentOffsetuserTypeFilter
             };
 
             if (statusFilter) params.status = statusFilter;

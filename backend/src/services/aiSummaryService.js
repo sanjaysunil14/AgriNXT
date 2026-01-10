@@ -17,7 +17,7 @@ export async function generatePerformanceSummary(dailyStats) {
     try {
         // Validate API key
         if (!process.env.GEMINI_API_KEY) {
-            console.error('❌ GEMINI_API_KEY is not configured');
+            console.error(' GEMINI_API_KEY is not configured');
             return generateFallbackSummary(dailyStats);
         }
 
@@ -51,7 +51,7 @@ ${JSON.stringify(dailyStats, null, 2)}
 
         return text.trim();
     } catch (error) {
-        console.error('❌ Error generating AI summary:', error.message);
+        console.error(' Error generating AI summary:', error.message);
         return generateFallbackSummary(dailyStats);
     }
 }

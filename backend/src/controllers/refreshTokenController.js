@@ -27,6 +27,14 @@ export const refreshAccessToken = async (req, res) => {
             { expiresIn: '15m' } // 15 minutes
         );
 
+        // Set new access token as HTTP-only cookie
+        res.cookie('accessToken', accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 15 * 60 * 1000 // 15 minutes
+        });
+
         res.status(200).json({
             success: true,
             message: 'Access token refreshed',
@@ -58,6 +66,13 @@ export const refreshAccessToken = async (req, res) => {
 // Logout and clear refresh token cookie
 export const logout = async (req, res) => {
     try {
+        // Clear access token cookie
+        res.clearCookie('accessToken', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict'
+        });
+
         // Clear refresh token cookie
         res.clearCookie('refreshToken', {
             httpOnly: true,

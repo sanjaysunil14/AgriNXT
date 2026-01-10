@@ -12,7 +12,7 @@ export default function TopBar({ onMenuClick }) {
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
-            sessionStorage.removeItem('accessToken');
+            // Cookies cleared by backend, just redirect
             navigate('/');
         }
     };

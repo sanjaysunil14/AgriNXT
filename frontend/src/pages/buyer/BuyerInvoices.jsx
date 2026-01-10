@@ -149,7 +149,7 @@ export default function BuyerInvoices() {
             render: (inv) => (
                 <button
                     onClick={() => handleDownloadPDF(inv)}
-                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                    className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
                     title="Download PDF"
                 >
                     <Download className="w-5 h-5" />

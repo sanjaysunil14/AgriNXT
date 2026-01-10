@@ -9,11 +9,10 @@ export default function FarmerSidebar({ isOpen, onClose }) {
     const handleLogout = async () => {
         try {
             await api.post('/auth/logout');
-            sessionStorage.removeItem('accessToken');
-            navigate('/');
         } catch (error) {
             console.error('Logout error:', error);
-            sessionStorage.removeItem('accessToken');
+        } finally {
+            // Cookies cleared by backend, just redirect
             navigate('/');
         }
     };

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Phone, Lock, Loader2, Eye, EyeOff, Sprout, ArrowRight } from 'lucide-react';
 import api from '../utils/api';
@@ -12,6 +12,38 @@ export default function Login() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const hasChecked = useRef(false);
+
+    // Check if already logged in on component mount - only once
+    useEffect(() => {
+        if (!hasChecked.current) {
+            hasChecked.current = true;
+            checkExistingAuth();
+        }
+    }, []);
+
+    const checkExistingAuth = async () => {
+        try {
+            // Call /users/me to check if cookie exists and is valid
+            const response = await api.get('/users/me');
+
+            if (response.data.success) {
+                const userRole = response.data.data.user.role;
+
+                // Redirect based on role
+                if (userRole === 'ADMIN') {
+                    navigate('/admin', { replace: true });
+                } else if (userRole === 'BUYER') {
+                    navigate('/buyer', { replace: true });
+                } else if (userRole === 'FARMER') {
+                    navigate('/farmer', { replace: true });
+                }
+            }
+        } catch (error) {
+            // Not authenticated, stay on login page
+            console.log('No active session');
+        }
+    };
 
     const handleChange = (e) => {
         setFormData({
@@ -44,10 +76,10 @@ export default function Login() {
             if (response.data.success) {
                 const accessToken = response.data.data.accessToken;
 
-                // Store access token
-                sessionStorage.setItem('accessToken', accessToken);
+                // Cookie is set automatically by backend
+                // No need to store in sessionStorage
 
-                // Decode JWT to get user role
+                // Decode JWT to get user role for navigation
                 const payload = JSON.parse(atob(accessToken.split('.')[1]));
                 const userRole = payload.role;
 

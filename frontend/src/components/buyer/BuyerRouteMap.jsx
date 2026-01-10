@@ -394,10 +394,10 @@ export default function BuyerRouteMap({ hubLocation, farmerBookings, onRouteOpti
     return (
         <div className="space-y-4">
             {/* ROUTE SUMMARY HEADER WITH STATS AND BUTTONS */}
-            <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl shadow-sm p-5 border border-blue-100">
+            <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl shadow-sm p-5 border border-emerald-100">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                        <MapPin className="w-5 h-5 text-blue-600" />
+                        <MapPin className="w-5 h-5 text-emerald-600" />
                         Route Summary
                     </h3>
                     <div className="flex items-center gap-2">
@@ -444,7 +444,7 @@ export default function BuyerRouteMap({ hubLocation, farmerBookings, onRouteOpti
                         {optimizedOrder.length > 0 && (
                             <button
                                 onClick={startNavigation}
-                                className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center gap-2 font-semibold shadow-md hover:shadow-lg"
+                                className="px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all duration-200 flex items-center gap-2 font-semibold shadow-md hover:shadow-lg"
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
@@ -457,9 +457,9 @@ export default function BuyerRouteMap({ hubLocation, farmerBookings, onRouteOpti
 
                 {/* Stats Grid - Colorful Cards */}
                 <div className="grid grid-cols-4 gap-4 mb-4">
-                    <div className="bg-white rounded-xl p-4 border-l-4 border-blue-500 shadow-sm hover:shadow-md transition-shadow">
-                        <p className="text-xs font-semibold text-blue-600 mb-1 uppercase tracking-wide">Distance</p>
-                        <p className="text-2xl font-bold text-blue-900">{totalDistance} km</p>
+                    <div className="bg-white rounded-xl p-4 border-l-4 border-emerald-500 shadow-sm hover:shadow-md transition-shadow">
+                        <p className="text-xs font-semibold text-emerald-600 mb-1 uppercase tracking-wide">Distance</p>
+                        <p className="text-2xl font-bold text-emerald-900">{totalDistance} km</p>
                     </div>
                     <div className="bg-white rounded-xl p-4 border-l-4 border-green-500 shadow-sm hover:shadow-md transition-shadow">
                         <p className="text-xs font-semibold text-green-600 mb-1 uppercase tracking-wide">Est. Time</p>
@@ -487,7 +487,7 @@ export default function BuyerRouteMap({ hubLocation, farmerBookings, onRouteOpti
                             {/* Icon */}
                             <div className="relative z-10 flex-shrink-0">
                                 <div className={`w-10 h-10 rounded-full border-4 border-white shadow-md flex items-center justify-center text-lg
-                                    ${currentStopIndex > 0 ? 'bg-green-500 text-white' : 'bg-blue-600 text-white animate-pulse'}`}>
+                                    ${currentStopIndex > 0 ? 'bg-green-500 text-white' : 'bg-emerald-600 text-white animate-pulse'}`}>
                                     {currentStopIndex > 0 ? '✓' : 'Base'}
                                 </div>
                             </div>
@@ -495,7 +495,7 @@ export default function BuyerRouteMap({ hubLocation, farmerBookings, onRouteOpti
                             <div className="flex-1 pt-1">
                                 <div className="flex items-center justify-between">
                                     <h4 className="font-bold text-gray-900 text-lg">Warehouse (Hub)</h4>
-                                    <span className={`text-xs font-bold px-2 py-1 rounded-full ${currentStopIndex === 0 ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                                    <span className={`text-xs font-bold px-2 py-1 rounded-full ${currentStopIndex === 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-green-100 text-green-700'}`}>
                                         {currentStopIndex === 0 ? 'Current Location' : 'Departed'}
                                     </span>
                                 </div>
@@ -524,7 +524,7 @@ export default function BuyerRouteMap({ hubLocation, farmerBookings, onRouteOpti
                                     <div className="relative z-10 flex-shrink-0">
                                         <div className={`w-10 h-10 rounded-full border-4 border-white shadow-md flex items-center justify-center font-bold text-sm transition-all duration-300
                                             ${isVisited ? 'bg-green-500 text-white' :
-                                                isCurrent ? 'bg-blue-600 text-white scale-110 shadow-blue-200 ring-4 ring-blue-50' :
+                                                isCurrent ? 'bg-emerald-600 text-white scale-110 shadow-emerald-200 ring-4 ring-emerald-50' :
                                                     'bg-white border-gray-300 text-gray-400'}`}>
                                             {isVisited ? '✓' : stepIndex}
                                         </div>
@@ -532,16 +532,16 @@ export default function BuyerRouteMap({ hubLocation, farmerBookings, onRouteOpti
 
                                     {/* Content */}
                                     <div className={`flex-1 p-4 rounded-xl border transition-all duration-300
-                                        ${isCurrent ? 'bg-blue-50 border-blue-200 shadow-sm' :
+                                        ${isCurrent ? 'bg-emerald-50 border-emerald-200 shadow-sm' :
                                             isVisited ? 'bg-gray-50 border-gray-100' :
                                                 'bg-white border-gray-200 opacity-80'}`}>
 
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                                            <h4 className={`text-lg font-bold ${isCurrent ? 'text-blue-900' : 'text-gray-900'}`}>
+                                            <h4 className={`text-lg font-bold ${isCurrent ? 'text-emerald-900' : 'text-gray-900'}`}>
                                                 {farmer.farmerName}
                                             </h4>
                                             {farmer.estimatedTimeToReach !== undefined && (
-                                                <div className={`flex items-center gap-1 text-sm font-medium ${isCurrent ? 'text-blue-700' : 'text-gray-500'}`}>
+                                                <div className={`flex items-center gap-1 text-sm font-medium ${isCurrent ? 'text-emerald-700' : 'text-gray-500'}`}>
                                                     <span>⏱</span>
                                                     <span>ETA: {formatDuration(farmer.estimatedTimeToReach)}</span>
                                                 </div>
@@ -552,7 +552,7 @@ export default function BuyerRouteMap({ hubLocation, farmerBookings, onRouteOpti
                                             {farmer.farmerPhone && (
                                                 <div className="flex items-center gap-2 text-gray-600">
                                                     <span>📞</span>
-                                                    <a href={`tel:${farmer.farmerPhone}`} className="hover:text-blue-600 underline-offset-2 hover:underline">
+                                                    <a href={`tel:${farmer.farmerPhone}`} className="hover:text-emerald-600 underline-offset-2 hover:underline">
                                                         {farmer.farmerPhone}
                                                     </a>
                                                 </div>
@@ -576,8 +576,8 @@ export default function BuyerRouteMap({ hubLocation, farmerBookings, onRouteOpti
                                         </div>
 
                                         {isCurrent && (
-                                            <div className="mt-3 pt-3 border-t border-blue-200 flex items-center gap-2 text-blue-700 text-sm font-medium animate-pulse">
-                                                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                                            <div className="mt-3 pt-3 border-t border-emerald-200 flex items-center gap-2 text-emerald-700 text-sm font-medium animate-pulse">
+                                                <div className="w-2 h-2 bg-emerald-600 rounded-full"></div>
                                                 Current Destination
                                             </div>
                                         )}
@@ -614,7 +614,7 @@ export default function BuyerRouteMap({ hubLocation, farmerBookings, onRouteOpti
             {/* MAP SECTION BELOW */}
             <div className="relative h-[500px] rounded-xl overflow-hidden shadow-md border border-gray-200">
                 {loading && (
-                    <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[1000] bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg">
+                    <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[1000] bg-emerald-600 text-white px-4 py-2 rounded-lg shadow-lg">
                         Optimizing route...
                     </div>
                 )}
@@ -674,7 +674,7 @@ export default function BuyerRouteMap({ hubLocation, farmerBookings, onRouteOpti
                                         {farmer.farmerPhone && (
                                             <p className="flex items-center gap-1">
                                                 <span className="w-3 h-3">📞</span>
-                                                <a href={`tel:${farmer.farmerPhone}`} className="text-blue-600 hover:underline">
+                                                <a href={`tel:${farmer.farmerPhone}`} className="text-emerald-600 hover:underline">
                                                     {farmer.farmerPhone}
                                                 </a>
                                             </p>

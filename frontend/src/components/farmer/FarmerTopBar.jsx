@@ -21,10 +21,15 @@ export default function FarmerTopBar({ onMenuClick }) {
         }
     };
 
-    const handleLogout = () => {
-        sessionStorage.removeItem('accessToken');
-        document.cookie = 'refreshToken=; Max-Age=0; path=/;';
-        navigate('/');
+    const handleLogout = async () => {
+        try {
+            await api.post('/auth/logout');
+        } catch (error) {
+            console.error('Logout error:', error);
+        } finally {
+            // Cookies cleared by backend, just redirect
+            navigate('/');
+        }
     };
 
     return (

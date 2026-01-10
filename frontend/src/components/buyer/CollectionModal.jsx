@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, MapPin, Plus, Package } from 'lucide-react';
+import { X, MapPin, Plus, Package, Leaf } from 'lucide-react';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
@@ -7,6 +7,7 @@ import api from '../../utils/api';
 
 export default function CollectionModal({ isOpen, onClose, booking, routeMetrics, onSuccess }) {
     const [items, setItems] = useState([{ vegetable: '', weight: '' }]);
+    const [availableVegetables, setAvailableVegetables] = useState([]);
     const [location, setLocation] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -14,9 +15,23 @@ export default function CollectionModal({ isOpen, onClose, booking, routeMetrics
 
     useEffect(() => {
         if (isOpen && booking) {
-            if (booking.vegetable_type) {
-                setItems([{ vegetable: booking.vegetable_type, weight: '' }]);
+            // Get vegetables from booking_items if available, otherwise fallback
+            let vegetables = [];
+            if (booking.booking_items && booking.booking_items.length > 0) {
+                vegetables = booking.booking_items.map(item => item.vegetable_type);
+            } else if (booking.vegetable_type) {
+                vegetables = [booking.vegetable_type];
             }
+
+            setAvailableVegetables(vegetables);
+
+            // Initialize first item with first vegetable if available
+            if (vegetables.length > 0) {
+                setItems([{ vegetable: vegetables[0], weight: '' }]);
+            } else {
+                setItems([{ vegetable: '', weight: '' }]);
+            }
+
             getCurrentLocation();
         }
     }, [isOpen, booking]);
@@ -118,7 +133,7 @@ export default function CollectionModal({ isOpen, onClose, booking, routeMetrics
                         <button
                             type="button"
                             onClick={handleAddItem}
-                            className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                            className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
                         >
                             <Plus className="w-3 h-3" /> Add Item
                         </button>
@@ -126,15 +141,21 @@ export default function CollectionModal({ isOpen, onClose, booking, routeMetrics
 
                     {items.map((item, index) => (
                         <div key={index} className="flex gap-3 items-start animate-fadeIn">
-                            <div className="flex-1">
-                                <Input
-                                    type="text"
-                                    placeholder="Item name"
+                            <div className="flex-1 relative">
+                                <select
                                     value={item.vegetable}
                                     onChange={(e) => handleItemChange(index, 'vegetable', e.target.value)}
-                                    className="bg-gray-50 border-gray-200"
-                                    containerClassName="m-0"
-                                />
+                                    className="block w-full rounded-xl border-gray-200 bg-gray-50 py-3 pl-4 pr-10 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500 focus:bg-white transition-colors appearance-none cursor-pointer font-medium"
+                                    required
+                                >
+                                    <option value="">Select vegetable</option>
+                                    {availableVegetables.map((veg, idx) => (
+                                        <option key={idx} value={veg}>{veg}</option>
+                                    ))}
+                                </select>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                                    <Leaf className="w-4 h-4" />
+                                </div>
                             </div>
                             <div className="w-28">
                                 <Input
@@ -172,7 +193,7 @@ export default function CollectionModal({ isOpen, onClose, booking, routeMetrics
                     ) : location ? (
                         <span className="text-green-700 font-bold">Location Verified</span>
                     ) : (
-                        <button type="button" onClick={getCurrentLocation} className="text-blue-600 font-bold hover:underline">
+                        <button type="button" onClick={getCurrentLocation} className="text-emerald-600 font-bold hover:underline">
                             Retry GPS
                         </button>
                     )}

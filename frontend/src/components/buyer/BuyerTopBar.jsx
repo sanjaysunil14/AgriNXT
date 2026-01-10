@@ -26,7 +26,7 @@ export default function BuyerTopBar({ onMenuClick }) {
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
-            sessionStorage.removeItem('accessToken');
+            // Cookies cleared by backend, just redirect
             navigate('/');
         }
     };
@@ -55,11 +55,11 @@ export default function BuyerTopBar({ onMenuClick }) {
                             <p className="text-sm font-bold text-gray-900 leading-none mb-1">
                                 {user?.full_name || 'Loading...'}
                             </p>
-                            <p className="text-xs text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full inline-block">
+                            <p className="text-xs text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full inline-block">
                                 BUYER
                             </p>
                         </div>
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md ring-4 ring-gray-50">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold shadow-md ring-4 ring-gray-50">
                             {user?.full_name?.charAt(0) || <User className="w-5 h-5" />}
                         </div>
                     </div>

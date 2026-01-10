@@ -8,11 +8,10 @@ export default function BuyerSidebar({ isOpen, onClose }) {
     const handleLogout = async () => {
         try {
             await api.post('/auth/logout');
-            sessionStorage.removeItem('accessToken');
-            navigate('/');
         } catch (error) {
             console.error('Logout error:', error);
-            sessionStorage.removeItem('accessToken');
+        } finally {
+            // Cookies cleared by backend, just redirect
             navigate('/');
         }
     };
@@ -42,7 +41,7 @@ export default function BuyerSidebar({ isOpen, onClose }) {
                 {/* Background Decoration */}
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
                     <div className="absolute top-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
-                    <div className="absolute bottom-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
+                    <div className="absolute bottom-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
                 </div>
 
                 <div className="relative z-10 flex flex-col h-full">
@@ -69,7 +68,7 @@ export default function BuyerSidebar({ isOpen, onClose }) {
                         </div>
 
                         <div className="px-4 py-3 bg-slate-800/50 rounded-xl border border-slate-700/50 mb-2">
-                            <p className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-0.5">Buyer Portal</p>
+                            <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-0.5">Buyer Portal</p>
                             <p className="text-xs text-slate-400">Procurement System</p>
                         </div>
                     </div>

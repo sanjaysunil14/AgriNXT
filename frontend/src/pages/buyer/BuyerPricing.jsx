@@ -123,8 +123,8 @@ export default function BuyerPricing() {
                                         <p className="text-xs text-gray-500 mt-1">{veg.count} batches</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-xl font-bold text-blue-600">{veg.totalWeight.toFixed(2)}</p>
-                                        <p className="text-xs text-blue-400 font-bold uppercase">KG</p>
+                                        <p className="text-xl font-bold text-emerald-600">{veg.totalWeight.toFixed(2)}</p>
+                                        <p className="text-xs text-emerald-400 font-bold uppercase">KG</p>
                                     </div>
                                 </div>
                             ))}

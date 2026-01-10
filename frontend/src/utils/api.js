@@ -1,8 +1,9 @@
 import axios from 'axios';
+import config from '../config.js';
 
 // Create axios instance
 const api = axios.create({
-    baseURL: 'http://localhost:5000/api',
+    baseURL: `${config.API_URL}/api`,
     headers: {
         'Content-Type': 'application/json'
     },
@@ -24,13 +25,11 @@ const processQueue = (error, token = null) => {
     failedQueue = [];
 };
 
-// Add token to requests automatically
+// Request interceptor - cookies are sent automatically
 api.interceptors.request.use(
     (config) => {
-        const token = sessionStorage.getItem('accessToken');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
+        // Token will be sent automatically via cookie with withCredentials: true
+        // No need to manually add Authorization header
         return config;
     },
     (error) => {
@@ -66,23 +65,17 @@ api.interceptors.response.use(
             try {
                 // Try to refresh the access token
                 const response = await axios.post(
-                    'http://localhost:5000/api/auth/refresh',
+                    `${config.API_URL}/api/auth/refresh`,
                     {},
                     { withCredentials: true }
                 );
 
                 if (response.data.success) {
-                    const newAccessToken = response.data.data.accessToken;
-
-                    // Store new access token
-                    sessionStorage.setItem('accessToken', newAccessToken);
-
-                    // Update authorization header
-                    api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
-                    originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+                    // Cookie is set automatically by backend via Set-Cookie header
+                    // No need to store in sessionStorage or update headers manually
 
                     // Process queued requests
-                    processQueue(null, newAccessToken);
+                    processQueue(null, null);
                     isRefreshing = false;
 
                     // Retry original request
@@ -93,8 +86,10 @@ api.interceptors.response.use(
                 processQueue(refreshError, null);
                 isRefreshing = false;
 
-                sessionStorage.removeItem('accessToken');
-                window.location.href = '/';
+                // Only redirect if not already on login page to prevent infinite loop
+                if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
+                    window.location.href = '/';
+                }
 
                 return Promise.reject(refreshError);
             }

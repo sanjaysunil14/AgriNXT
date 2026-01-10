@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import Spinner from '../ui/Spinner';
+import api from '../../utils/api';
 
 export default function BuyerGuard({ children }) {
     const [loading, setLoading] = useState(true);
@@ -10,23 +11,19 @@ export default function BuyerGuard({ children }) {
         checkBuyerRole();
     }, []);
 
-    const checkBuyerRole = () => {
+    const checkBuyerRole = async () => {
         try {
-            const token = sessionStorage.getItem('accessToken');
+            // API call will include cookie automatically
+            const response = await api.get('/users/me');
 
-            if (!token) {
-                setIsBuyer(false);
-                setLoading(false);
-                return;
-            }
+            if (response.data.success) {
+                const userRole = response.data.data.user.role;
 
-            // Decode JWT token to get user role
-            const payload = JSON.parse(atob(token.split('.')[1]));
-
-            if (payload.role === 'BUYER') {
-                setIsBuyer(true);
-            } else {
-                setIsBuyer(false);
+                if (userRole === 'BUYER') {
+                    setIsBuyer(true);
+                } else {
+                    setIsBuyer(false);
+                }
             }
         } catch (error) {
             console.error('Buyer check failed:', error);

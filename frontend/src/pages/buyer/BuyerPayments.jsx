@@ -85,7 +85,7 @@ export default function BuyerPayments() {
                 <Button
                     size="sm"
                     onClick={() => handlePay(farmer)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-200 rounded-lg px-4"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-200 rounded-lg px-4"
                 >
                     Pay Now
                 </Button>
@@ -98,7 +98,7 @@ export default function BuyerPayments() {
             {/* Header */}
             <div className="flex items-center gap-4">
                 <div className="p-3 bg-white shadow-sm border border-gray-100 rounded-2xl">
-                    <Wallet className="w-6 h-6 text-blue-600" />
+                    <Wallet className="w-6 h-6 text-emerald-600" />
                 </div>
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900">Payment Center</h1>
@@ -111,7 +111,7 @@ export default function BuyerPayments() {
                 {[
                     { title: 'Farmers Pending', value: dues.length, icon: User, color: 'text-orange-600', bg: 'bg-orange-100' },
                     { title: 'Total Liability', value: `₹${dues.reduce((sum, f) => sum + f.balance, 0).toFixed(2)}`, icon: Wallet, color: 'text-red-600', bg: 'bg-red-100' },
-                    { title: 'Avg. Price', value: `₹${dues.length > 0 ? (dues.reduce((sum, f) => sum + f.balance, 0) / dues.length).toFixed(0) : '0'}`, icon: Phone, color: 'text-blue-600', bg: 'bg-blue-100' }
+                    { title: 'Avg. Price', value: `₹${dues.length > 0 ? (dues.reduce((sum, f) => sum + f.balance, 0) / dues.length).toFixed(0) : '0'}`, icon: Phone, color: 'text-emerald-600', bg: 'bg-emerald-100' }
                 ].map((stat, i) => (
                     <div key={i} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                         <div>

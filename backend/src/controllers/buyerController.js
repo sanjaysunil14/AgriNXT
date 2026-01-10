@@ -54,6 +54,7 @@ export const getRoute = async (req, res) => {
                 }
             },
             include: {
+                booking_items: true,
                 farmer: {
                     include: {
                         user: {
@@ -80,6 +81,9 @@ export const getRoute = async (req, res) => {
         const routeData = bookings.map(booking => ({
             id: booking.id,
             date: booking.date,
+            vegetables_summary: booking.vegetables_summary,
+            booking_items: booking.booking_items || [],
+            // Keep old fields for backward compatibility
             vegetable_type: booking.vegetable_type,
             quantity_kg: booking.quantity_kg,
             status: booking.status,

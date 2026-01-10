@@ -156,7 +156,7 @@ export default function BuyerFieldRoute() {
                                         {/* Farmer Info */}
                                         <div className="flex items-start gap-3 mb-3">
                                             {/* Avatar */}
-                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
                                                 {booking.farmer.name.charAt(0).toUpperCase()}
                                             </div>
                                             {/* Name & Phone */}

@@ -28,14 +28,10 @@ import AdminProfitability from './pages/admin/AdminProfitability';
 import PerformanceSummary from './pages/admin/PerformanceSummary';
 import VegetableRequests from './pages/admin/VegetableRequests';
 
-// Protected Route Component
+// Protected Route Component - guards will handle authentication
 function ProtectedRoute({ children }) {
-    const token = sessionStorage.getItem('accessToken');
-
-    if (!token) {
-        return <Navigate to="/" replace />;
-    }
-
+    // Guards will handle authentication verification via API calls
+    // Cookie-based auth means we can't check token on client side
     return children;
 }
 
@@ -69,7 +65,7 @@ function App() {
                         <Route path="profitability" element={<AdminProfitability />} />
                         <Route path="performance" element={<PerformanceSummary />} />
                         <Route path="vegetable-requests" element={<VegetableRequests />} />
-                        
+
                     </Route>
 
                     {/* Legacy admin dashboard route - redirect to new admin */}

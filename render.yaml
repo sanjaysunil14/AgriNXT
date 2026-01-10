@@ -31,13 +31,13 @@ services:
       - key: TWILIO_WHATSAPP_NUMBER
         sync: false
 
+staticSites:
   # Frontend Service (React + Vite)
-  - type: static
-    name: farmer-buyer-frontend
+  - name: farmer-buyer-frontend
     repo: https://github.com/sanjaysunil14/Week-5-Test
     rootDir: frontend
     buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
+    publishDir: dist
     plan: free
     routes:
       - type: rewrite

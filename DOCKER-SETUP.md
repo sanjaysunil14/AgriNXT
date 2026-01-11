@@ -86,7 +86,7 @@ When using Docker:
 ## 🔧 Environment Variables
 
 Your `.env` file is already configured with:
-- ✅ Database credentials (postgres/sanjay14)
+- ✅ Database credentials (postgres/password)
 - ✅ JWT secret
 - ✅ Twilio WhatsApp configuration
 - ✅ Google Gemini API key

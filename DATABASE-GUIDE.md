@@ -70,7 +70,7 @@ services:
   backend:
     environment:
       # Change this line:
-      DATABASE_URL: postgresql://postgres:sanjay14@host.docker.internal:5432/farmer_buyer_db
+      DATABASE_URL: postgresql://postgres:password@host.docker.internal:5432/farmer_buyer_db
       # (host.docker.internal = your Windows machine from inside Docker)
 ```
 

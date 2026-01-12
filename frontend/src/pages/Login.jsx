@@ -10,6 +10,7 @@ export default function Login() {
         password: ''
     });
     const [loading, setLoading] = useState(false);
+    const [checkingAuth, setCheckingAuth] = useState(true); // New state for auth check
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const hasChecked = useRef(false);
@@ -42,6 +43,9 @@ export default function Login() {
         } catch (error) {
             // Not authenticated, stay on login page
             console.log('No active session');
+        } finally {
+            // Always set checkingAuth to false after the check completes
+            setCheckingAuth(false);
         }
     };
 
@@ -98,6 +102,38 @@ export default function Login() {
             setLoading(false);
         }
     };
+
+    // Show loading spinner while checking for existing auth
+    if (checkingAuth) {
+        return (
+            <div className="min-h-screen bg-slate-900 relative overflow-hidden flex items-center justify-center p-4">
+                {/* Background Decorations */}
+                <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                    <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/20 rounded-full blur-[100px] -translate-y-1/2"></div>
+                    <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-[100px] translate-y-1/2"></div>
+                </div>
+
+                {/* Brand Header */}
+                <div className="text-center relative z-10">
+                    <div className="flex items-center justify-center gap-3 mb-6">
+                        <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                            <Sprout className="w-9 h-9 text-white" />
+                        </div>
+                        <h1 className="text-4xl font-bold text-white tracking-tight">AgriNXT</h1>
+                    </div>
+
+                    {/* Loading Spinner */}
+                    <div className="relative flex justify-center">
+                        <div className="w-16 h-16 border-4 border-emerald-200/30 border-t-emerald-500 rounded-full animate-spin"></div>
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                            <Loader2 className="w-6 h-6 text-emerald-500" />
+                        </div>
+                    </div>
+                    <p className="text-slate-400 text-sm mt-6">Checking authentication...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-slate-900 relative overflow-hidden flex items-center justify-center p-4">
